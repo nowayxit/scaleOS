@@ -1,0 +1,53 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-50: #f4f6ff;
+  --color-brand-100: #e8ecff;
+  --color-brand-200: #d2dbff;
+  --color-brand-300: #adc1ff;
+  --color-brand-400: #829dff;
+  --color-brand-500: #5973ff;
+  --color-brand-600: #3b4eff;
+  --color-brand-700: #2a39eb;
+  --color-brand-800: #2431bd;
+  --color-brand-900: #222e96;
+  --color-brand-950: #121657;
+
+  --color-background: #0a0a0a;
+  --color-foreground: #ededed;
+  
+  --color-card: #141414;
+  --color-card-border: #262626;
+  
+  --color-muted: #1f1f1f;
+  --color-muted-foreground: #a3a3a3;
+  
+  --color-status-green: #10b981;
+  --color-status-yellow: #f59e0b;
+  --color-status-red: #ef4444;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+  --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+    @apply font-sans antialiased selection:bg-brand-500/30;
+  }
+}
+
+@layer utilities {
+  .glass-panel {
+    @apply bg-card/60 backdrop-blur-md border border-card-border shadow-2xl;
+  }
+  
+  .table-row-hover {
+    @apply hover:bg-white/[0.02] transition-colors;
+  }
+
+  .text-glow {
+    text-shadow: 0 0 20px rgba(255, 255, 255, 0.1);
+  }
+}
