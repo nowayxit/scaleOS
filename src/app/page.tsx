@@ -12,7 +12,10 @@ export default function Home() {
   const [showAdd, setShowAdd] = useState(false);
   const [filter, setFilter] = useState<'all' | 'critical' | 'warning' | 'good'>('all');
 
+  const good = clients.filter(c => c.healthStatus === 'good').length;
+  const warning = clients.filter(c => c.healthStatus === 'warning').length;
   const critical = clients.filter(c => c.healthStatus === 'critical').length;
+  const totalSpend = clients.reduce((acc, c) => acc + c.currentSpend, 0);
 
   return (
     <>
@@ -25,7 +28,7 @@ export default function Home() {
         <div className="relative z-10 max-w-7xl mx-auto">
           <header className="flex justify-between items-end mb-8">
             <div>
-              <h1 className="text-3xl font-semibold tracking-tight text-white mb-1">The Tower</h1>
+              <h1 className="text-3xl font-semibold tracking-tight text-white mb-1">Visão Geral</h1>
               <p className="text-sm text-muted-foreground">
                 Comando central operacional.{" "}
                 <span className="text-brand-400 font-medium">{clients.length} clientes ativos</span>
@@ -65,6 +68,50 @@ export default function Home() {
               </button>
             </div>
           </header>
+
+          {/* Health Status Map */}
+          <section className="mb-8 grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-card/40 border border-card-border p-5 rounded-xl flex flex-col justify-center">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">Total Investido (Moeda Local) </p>
+              <p className="text-2xl font-mono text-white">
+                {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalSpend)}
+              </p>
+            </div>
+            
+            <button onClick={() => setFilter('good')} className={`bg-status-green/10 border ${filter === 'good' ? 'border-status-green ring-1 ring-status-green/50' : 'border-status-green/20 hover:border-status-green/40'} p-5 rounded-xl transition-all text-left flex flex-col justify-between`}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-status-green shadow-[0_0_10px_rgba(16,185,129,0.8)] animate-pulse"></div>
+                <p className="text-xs font-semibold text-status-green uppercase tracking-wider">Batendo Meta</p>
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-bold text-white">{good}</span>
+                <span className="text-sm text-status-green/70 mb-1">contas</span>
+              </div>
+            </button>
+
+            <button onClick={() => setFilter('warning')} className={`bg-status-yellow/10 border ${filter === 'warning' ? 'border-status-yellow ring-1 ring-status-yellow/50' : 'border-status-yellow/20 hover:border-status-yellow/40'} p-5 rounded-xl transition-all text-left flex flex-col justify-between`}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="w-2.5 h-2.5 rounded-full bg-status-yellow shadow-[0_0_10px_rgba(245,158,11,0.8)]"></div>
+                <p className="text-xs font-semibold text-status-yellow uppercase tracking-wider">Atenção / Alerta</p>
+              </div>
+              <div className="flex items-end gap-2">
+                <span className="text-3xl font-bold text-white">{warning}</span>
+                <span className="text-sm text-status-yellow/70 mb-1">contas</span>
+              </div>
+            </button>
+
+            <button onClick={() => setFilter('critical')} className={`bg-status-red/10 border ${filter === 'critical' ? 'border-status-red ring-1 ring-status-red/50' : 'border-status-red/20 hover:border-status-red/40'} p-5 rounded-xl transition-all text-left flex flex-col justify-between relative overflow-hidden`}>
+              {critical > 0 && <div className="absolute -right-4 -top-4 w-16 h-16 bg-status-red/20 blur-xl rounded-full"></div>}
+              <div className="flex items-center gap-2 mb-2 relative z-10">
+                <div className="w-2.5 h-2.5 rounded-full bg-status-red shadow-[0_0_10px_rgba(239,68,68,0.8)]"></div>
+                <p className="text-xs font-semibold text-status-red uppercase tracking-wider">Crítico / Fora da Meta</p>
+              </div>
+              <div className="flex items-end gap-2 relative z-10">
+                <span className="text-3xl font-bold text-white">{critical}</span>
+                <span className="text-sm text-status-red/70 mb-1">contas</span>
+              </div>
+            </button>
+          </section>
 
           <ClientTable filter={filter} />
         </div>

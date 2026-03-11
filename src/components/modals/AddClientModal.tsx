@@ -20,6 +20,7 @@ const emptyForm = {
     adsManagerUrl: '',
     ga4Url: '',
     lookerUrl: '',
+    driveFolderUrl: '',
     lastOptimization: 'Nunca',
     nextReviewDate: '',
     pendingInsight: '',
@@ -36,7 +37,7 @@ export function AddClientModal({ onClose }: AddClientModalProps) {
         if (!form.name.trim()) e.name = 'Nome obrigatório';
         if (!form.niche.trim()) e.niche = 'Nicho obrigatório';
         if (!form.budget || isNaN(Number(form.budget))) e.budget = 'Verba inválida';
-        if (!form.targetCpa || isNaN(Number(form.targetCpa))) e.targetCpa = 'CPA inválido';
+        if (form.targetCpa && isNaN(Number(form.targetCpa))) e.targetCpa = 'CPA inválido';
         setErrors(e);
         return Object.keys(e).length === 0;
     };
@@ -49,12 +50,13 @@ export function AddClientModal({ onClose }: AddClientModalProps) {
             budget: parseFloat(form.budget),
             currentSpend: parseFloat(form.currentSpend) || 0,
             currency: form.currency,
-            targetCpa: parseFloat(form.targetCpa),
+            targetCpa: parseFloat(form.targetCpa) || 0,
             minRoas: parseFloat(form.minRoas) || 0,
             healthStatus: form.healthStatus as 'good' | 'warning' | 'critical',
             adsManagerUrl: form.adsManagerUrl,
             ga4Url: form.ga4Url,
             lookerUrl: form.lookerUrl,
+            driveFolderUrl: form.driveFolderUrl,
             lastOptimization: 'Nunca',
             nextReviewDate: form.nextReviewDate || new Date().toISOString().split('T')[0],
             pendingInsight: '',
@@ -109,8 +111,7 @@ export function AddClientModal({ onClose }: AddClientModalProps) {
                         <h3 className="text-sm font-semibold text-brand-300 mb-4 uppercase tracking-wider">Verba e KPIs</h3>
                         <div className="grid grid-cols-2 gap-4">
                             {field('Verba Mensal (Budget)', 'budget', 'number', 'R$', '0')}
-                            {field('Gasto Atual', 'currentSpend', 'number', 'R$', '0')}
-                            {field('CPA Desejado', 'targetCpa', 'number', 'R$', '0')}
+                            {field('CPA Desejado (Opcional)', 'targetCpa', 'number', 'R$', '0')}
                             {field('ROAS Mínimo', 'minRoas', 'number', '×', '0')}
                             <div>
                                 <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Moeda</label>
@@ -137,6 +138,7 @@ export function AddClientModal({ onClose }: AddClientModalProps) {
                             {field('URL do Ads Manager (Meta/Google)', 'adsManagerUrl', 'url', undefined, 'https://...')}
                             {field('URL do GA4', 'ga4Url', 'url', undefined, 'https://analytics.google.com/...')}
                             {field('URL do Looker Studio', 'lookerUrl', 'url', undefined, 'https://lookerstudio.google.com/...')}
+                            {field('Pasta / Drive do Cliente', 'driveFolderUrl', 'url', undefined, 'https://drive.google.com/...')}
                         </div>
                     </div>
                 </div>

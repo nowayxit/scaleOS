@@ -20,6 +20,7 @@ export interface TaskStoreState {
   columns: TaskColumn[];
   
   // Tasks CRUD
+  setTasks: (tasks: Task[]) => void;
   addTask: (task: Omit<Task, 'id'>) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   deleteTask: (id: string) => void;
@@ -36,18 +37,9 @@ export interface TaskStoreState {
   reorderColumns: (columnIds: string[]) => void;
 }
 
-const initialTasks: Task[] = [
-  { id: '1', title: 'Otimizar Campanhas Meta Ads', clientName: 'AlphaTech', clientId: 'c1', columnId: 'col-3', priority: 'high', dueDate: 'Hoje', comments: [{ id: 'mock-1', text: 'Precisamos focar no ROAS nessa semana.', createdAt: new Date().toISOString(), createdBy: 'Gestor' }], tags: ['tag-1'] },
-  { id: '2', title: 'Criar Relatório Mensal', clientName: 'Omega Fit', clientId: 'c2', columnId: 'col-2', priority: 'medium', dueDate: 'Amanhã', tags: ['tag-2'] },
-  { id: '3', title: 'Reunião de Alinhamento de Criativos', clientName: 'Zeta Bank', clientId: 'c3', columnId: 'col-1', priority: 'low' },
-  { id: '4', title: 'Configurar Pixel TikTok', clientName: 'AlphaTech', clientId: 'c1', columnId: 'col-5', priority: 'high', dueDate: 'Ontem', comments: [], tags: ['tag-1'] },
-];
+const initialTasks: Task[] = [];
 
-const initialTags: Tag[] = [
-  { id: 'tag-1', name: 'Mídia Paga', color: 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30' },
-  { id: 'tag-2', name: 'Relatório', color: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30' },
-  { id: 'tag-3', name: 'Estratégia', color: 'bg-amber-500/20 text-amber-300 border-amber-500/30' }
-];
+const initialTags: Tag[] = [];
 
 const initialColumns: TaskColumn[] = [
   { id: 'col-1', title: 'Backlog', order: 0 },
@@ -64,21 +56,70 @@ export const useTaskStore = create<TaskStoreState>()(
       tags: initialTags,
       columns: initialColumns,
 
-      addTask: (task) => set((state) => ({
-        tasks: [{ ...task, id: `task-${Date.now()}` }, ...state.tasks]
-      })),
+      setTasks: (tasks) => set({ tasks }),
 
-      updateTask: (id, updates) => set((state) => ({
-        tasks: state.tasks.map(t => t.id === id ? { ...t, ...updates } : t)
-      })),
+      addTask: async (task) => {
+        const tempId = `temp-task-${Date.now()}`;
+        // Optimistic
+        set((state) => ({
+          tasks: [{ ...task, id: tempId }, ...state.tasks]
+        }));
 
-      deleteTask: (id) => set((state) => ({
-        tasks: state.tasks.filter(t => t.id !== id)
-      })),
+        try {
+          const res = await fetch('/api/tasks', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(task)
+          });
+          if (res.ok) {
+            const savedTask = await res.json();
+            // We map internal TS representation of tags string[] back if need be, assuming saving returns properly
+            const formattedTags = savedTask.tags?.map((t: any) => t.id) || [];
+            
+            set((state) => ({
+              tasks: state.tasks.map(t => t.id === tempId ? { ...savedTask, tags: formattedTags, clientName: task.clientName } : t)
+            }));
+          } else {
+            // Revert
+            set((state) => ({ tasks: state.tasks.filter(t => t.id !== tempId) }));
+          }
+        } catch (error) {
+          console.error("Failed to add task", error);
+          set((state) => ({ tasks: state.tasks.filter(t => t.id !== tempId) }));
+        }
+      },
 
-      moveTask: (taskId, newColumnId) => set((state) => ({
-        tasks: state.tasks.map(t => t.id === taskId ? { ...t, columnId: newColumnId } : t)
-      })),
+      updateTask: (id, updates) => {
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === id ? { ...t, ...updates } : t)
+        }));
+
+        fetch(`/api/tasks/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates)
+        }).catch(err => console.error("Failed to update task", err));
+      },
+
+      deleteTask: (id) => {
+        set((state) => ({
+          tasks: state.tasks.filter(t => t.id !== id)
+        }));
+
+        fetch(`/api/tasks/${id}`, { method: 'DELETE' }).catch(err => console.error("Failed to delete task", err));
+      },
+
+      moveTask: (taskId, newColumnId) => {
+        set((state) => ({
+          tasks: state.tasks.map(t => t.id === taskId ? { ...t, columnId: newColumnId } : t)
+        }));
+
+        fetch(`/api/tasks/${taskId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ columnId: newColumnId })
+        }).catch(err => console.error("Failed to move task", err));
+      },
 
       addTag: (name, color) => set((state) => ({
         tags: [...state.tags, { id: `tag-${Date.now()}`, name, color }]

@@ -11,11 +11,11 @@ import { useAppStore } from '@/store/useAppStore';
 
 
 export function TaskBoard() {
-  const { tasks, columns, moveTask, addColumn, deleteColumn, updateColumn } = useTaskStore();
-  const clients = useAppStore(s => s.clients);
+  const { tasks, columns, tags, moveTask, addColumn, deleteColumn, updateColumn } = useTaskStore();
+  const { clients, globalTaskFilter, setGlobalTaskFilter } = useAppStore();
 
   const [search, setSearch] = useState('');
-  const [selectedClient, setSelectedClient] = useState<string>('all');
+  const [tagFilter, setTagFilter] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'kanban' | 'list'>('kanban');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -24,8 +24,9 @@ export function TaskBoard() {
   const filteredTasks = tasks.filter(task => {
     const matchesSearch = task.title.toLowerCase().includes(search.toLowerCase()) || 
                           task.clientName.toLowerCase().includes(search.toLowerCase());
-    const matchesClient = selectedClient === 'all' || task.clientId === selectedClient;
-    return matchesSearch && matchesClient;
+    const matchesClient = globalTaskFilter === 'all' || task.clientId === globalTaskFilter;
+    const matchesTag = tagFilter === 'all' || task.tags?.includes(tagFilter);
+    return matchesSearch && matchesClient && matchesTag;
   });
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -85,11 +86,11 @@ export function TaskBoard() {
                     className="w-full bg-black/60 border border-card-border rounded-lg pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:border-brand-500 transition-colors placeholder:text-muted-foreground/60 shadow-inner"
                 />
             </div>
-            <div className="relative flex-1 max-w-[240px]">
+             <div className="relative flex-1 max-w-[240px]">
                  <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-500 pointer-events-none" size={14} />
                  <select 
-                    value={selectedClient}
-                    onChange={(e) => setSelectedClient(e.target.value)}
+                    value={globalTaskFilter}
+                    onChange={(e) => setGlobalTaskFilter(e.target.value)}
                     className="w-full bg-brand-500/10 border border-brand-500/30 rounded-lg pl-9 pr-8 py-2.5 text-sm appearance-none focus:outline-none focus:border-brand-400 transition-colors text-brand-100 font-medium cursor-pointer"
                  >
                      <option value="all" className="bg-card text-foreground">Todos os Clientes</option>
@@ -101,6 +102,23 @@ export function TaskBoard() {
                      <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
                  </div>
             </div>
+            {tags.length > 0 && (
+             <div className="relative flex-1 max-w-[200px]">
+                 <select 
+                    value={tagFilter}
+                    onChange={(e) => setTagFilter(e.target.value)}
+                    className="w-full bg-white/5 border border-card-border rounded-lg pl-4 pr-8 py-2.5 text-sm appearance-none focus:outline-none focus:border-brand-400 transition-colors text-muted-foreground font-medium cursor-pointer"
+                 >
+                     <option value="all" className="bg-card text-foreground">Todas as Tags</option>
+                     {tags.map(t => (
+                         <option key={t.id} value={t.id} className="bg-card text-foreground">{t.name}</option>
+                     ))}
+                 </select>
+                 <div className="absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-muted-foreground">
+                     <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                 </div>
+            </div>
+            )}
 
             <div className="flex bg-black/40 border border-card-border rounded-lg p-1">
                 <button 

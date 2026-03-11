@@ -9,6 +9,9 @@ export const metadata: Metadata = {
   description: "Painel de Controle de Saúde de Contas e Histórico Estratégico para Gestores de Tráfego de Alta Performance.",
 };
 
+import { AuthProvider } from "@/components/providers/AuthProvider";
+import { DataProvider } from "@/components/providers/DataProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -17,7 +20,11 @@ export default function RootLayout({
   return (
     <html lang="pt-BR" className="dark">
       <body className={`${inter.className} min-h-screen bg-background text-foreground flex`}>
-        {children}
+        <AuthProvider>
+          <DataProvider>
+            {children}
+          </DataProvider>
+        </AuthProvider>
       </body>
     </html>
   );

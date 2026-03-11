@@ -26,6 +26,7 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
         adsManagerUrl: client.adsManagerUrl || '',
         ga4Url: client.ga4Url || '',
         lookerUrl: client.lookerUrl || '',
+        driveFolderUrl: client.driveFolderUrl || '',
     });
 
     const [confirmDelete, setConfirmDelete] = useState(false);
@@ -43,6 +44,7 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
             adsManagerUrl: form.adsManagerUrl,
             ga4Url: form.ga4Url,
             lookerUrl: form.lookerUrl,
+            driveFolderUrl: form.driveFolderUrl,
         });
         onClose();
     };
@@ -147,6 +149,7 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
                             {field('URL do Ads Manager (Meta/Google)', 'adsManagerUrl')}
                             {field('URL do GA4', 'ga4Url')}
                             {field('URL do Looker Studio / Report', 'lookerUrl')}
+                            {field('Pasta / Drive do Cliente', 'driveFolderUrl')}
                         </div>
                     </div>
 

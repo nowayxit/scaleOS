@@ -19,6 +19,7 @@ export interface Client {
     adsManagerUrl?: string;
     ga4Url?: string;
     lookerUrl?: string;
+    driveFolderUrl?: string;
 
     // Saúde
     healthStatus: HealthStatus;
@@ -44,6 +45,7 @@ export const mockClients: Client[] = [
         adsManagerUrl: 'https://www.facebook.com/adsmanager',
         ga4Url: '',
         lookerUrl: '',
+        driveFolderUrl: '',
         lastOptimization: '2 horas atrás',
         nextReviewDate: '2026-03-07',
         pendingInsight: 'Campanha de Bichectomia convertendo a R$38. Escalar na sexta.',
@@ -62,6 +64,7 @@ export const mockClients: Client[] = [
         adsManagerUrl: '',
         ga4Url: '',
         lookerUrl: '',
+        driveFolderUrl: '',
         lastOptimization: 'Ontem',
         nextReviewDate: '2026-03-06',
         pendingInsight: 'Verba estourando no remarketing. ROAS caiu para 1.8.',
@@ -80,6 +83,7 @@ export const mockClients: Client[] = [
         adsManagerUrl: '',
         ga4Url: '',
         lookerUrl: '',
+        driveFolderUrl: '',
         lastOptimization: '3 dias atrás',
         nextReviewDate: '2026-03-05',
         pendingInsight: 'CPL subiu +30%. Checar termo de busca no Google Ads.',
@@ -98,6 +102,7 @@ export const mockClients: Client[] = [
         adsManagerUrl: '',
         ga4Url: '',
         lookerUrl: '',
+        driveFolderUrl: '',
         lastOptimization: 'Hoje, 09:00',
         nextReviewDate: '2026-03-08',
         pendingInsight: 'Novo criativo TIKTOK com HOOK de 33%. Mantendo.',
@@ -116,6 +121,7 @@ export const mockClients: Client[] = [
         adsManagerUrl: '',
         ga4Url: '',
         lookerUrl: '',
+        driveFolderUrl: '',
         lastOptimization: '5 dias atrás',
         nextReviewDate: '2026-03-05',
         pendingInsight: 'Fadiga Criativa (Freq > 5). Necessita aprovação de urgência.',
@@ -134,6 +140,7 @@ export const mockClients: Client[] = [
         adsManagerUrl: '',
         ga4Url: '',
         lookerUrl: '',
+        driveFolderUrl: '',
         lastOptimization: 'Hoje, 14:00',
         nextReviewDate: '2026-03-10',
         pendingInsight: 'Campanha de Ifood com CTR de 4.5%. Rodando liso.',
@@ -152,6 +159,7 @@ export const mockClients: Client[] = [
         adsManagerUrl: '',
         ga4Url: '',
         lookerUrl: '',
+        driveFolderUrl: '',
         lastOptimization: 'Há 1 semana',
         nextReviewDate: '2026-03-05',
         pendingInsight: 'Campanha recém lançada, aguardando aprendizado Google Local.',

@@ -1,8 +1,23 @@
+"use client";
+
 import { Sidebar } from "@/components/layout/Sidebar";
 import { TaskBoard } from "@/components/TaskBoard";
 import { Zap } from "lucide-react";
+import { useTaskStore } from "@/store/useTaskStore";
+import { useAppStore } from "@/store/useAppStore";
 
 export default function TarefasPage() {
+  const tasks = useTaskStore(s => s.tasks);
+  const columns = useTaskStore(s => s.columns);
+  const globalTaskFilter = useAppStore(s => s.globalTaskFilter);
+
+  const doneColumnId = columns.find(c => c.title.toLowerCase().includes('conclu'))?.id;
+
+  const activeTasksCount = tasks.filter(t => 
+    t.columnId !== doneColumnId &&
+    (globalTaskFilter === 'all' || t.clientId === globalTaskFilter)
+  ).length;
+
   return (
     <>
       <Sidebar />
@@ -23,7 +38,7 @@ export default function TarefasPage() {
             <div className="flex items-center gap-4">
                <div className="bg-brand-500/10 border border-brand-500/20 px-5 py-2.5 rounded-lg flex items-center gap-2.5 shadow-inner">
                    <Zap size={16} className="text-brand-400" />
-                   <span className="text-sm font-bold text-brand-200">7 Demandas Ativas</span>
+                   <span className="text-sm font-bold text-brand-200">{activeTasksCount} Demandas Ativas</span>
                </div>
             </div>
         </header>
@@ -35,3 +50,4 @@ export default function TarefasPage() {
     </>
   );
 }
+

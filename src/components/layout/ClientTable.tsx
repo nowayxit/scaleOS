@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppStore } from "@/store/useAppStore";
-import { AlertTriangle, CheckCircle2, TrendingDown, RefreshCcw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, TrendingDown, RefreshCcw, Folder } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
@@ -105,12 +105,25 @@ export function ClientTable({ filter = 'all' }: ClientTableProps) {
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 text-right whitespace-nowrap">
-                                    <Link
-                                        href={`/cockpit/${client.id}`}
-                                        className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-brand-600 hover:bg-brand-500 text-white shadow px-4 py-2 opacity-0 group-hover:opacity-100 h-8"
-                                    >
-                                        Abrir Cockpit
-                                    </Link>
+                                    <div className="flex items-center justify-end gap-2">
+                                        {client.driveFolderUrl && (
+                                            <a 
+                                                href={client.driveFolderUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center justify-center rounded-md text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 px-3 py-2 h-8 transition-colors"
+                                                title="Abrir Pasta/Drive do Cliente"
+                                            >
+                                                <Folder size={16} />
+                                            </a>
+                                        )}
+                                        <Link
+                                            href={`/cockpit/${client.id}`}
+                                            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-brand-600 hover:bg-brand-500 text-white shadow px-4 py-2 opacity-0 group-hover:opacity-100 h-8"
+                                        >
+                                            Abrir Cockpit
+                                        </Link>
+                                    </div>
                                 </td>
                             </tr>
                         ))}

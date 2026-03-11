@@ -2,13 +2,15 @@
 
 import { Sidebar } from "@/components/layout/Sidebar";
 import { useAppStore } from "@/store/useAppStore";
+import { useTaskStore } from "@/store/useTaskStore";
 import Link from "next/link";
 import {
     ArrowLeft, ExternalLink, Activity, Target, Zap, Clock, Save,
-    RefreshCcw, Plus, Trash2, Edit2, X, CheckCircle2
+    RefreshCcw, Plus, Trash2, Edit2, X, CheckCircle2, Folder, Presentation, Download
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useState, useEffect, useMemo } from "react";
+import { ClientSettingsModal } from "@/components/ClientSettingsModal";
 
 export default function CockpitPage() {
     const params = useParams();
@@ -18,23 +20,39 @@ export default function CockpitPage() {
     const client = useAppStore(s => s.clients.find(c => c.id === id));
     const allRoutines = useAppStore(s => s.routines);
     const allDecisionLogs = useAppStore(s => s.decisionLogs);
+    const allMeetingNotes = useAppStore(s => s.meetingNotes);
     const routines = useMemo(() => allRoutines.filter(r => r.clientId === id), [allRoutines, id]);
     const decisionLogs = useMemo(() => allDecisionLogs.filter(d => d.clientId === id), [allDecisionLogs, id]);
+    const meetingNotes = useMemo(() => allMeetingNotes.filter(n => n.clientId === id), [allMeetingNotes, id]);
     const saveOptimizationSession = useAppStore(s => s.saveOptimizationSession);
     const updateClient = useAppStore(s => s.updateClient);
     const toggleRoutineItem = useAppStore(s => s.toggleRoutineItem);
     const addRoutineItem = useAppStore(s => s.addRoutineItem);
     const deleteRoutineItem = useAppStore(s => s.deleteRoutineItem);
     const addDecisionLog = useAppStore(s => s.addDecisionLog);
+    const updateDecisionLog = useAppStore(s => s.updateDecisionLog);
+    const addMeetingNote = useAppStore(s => s.addMeetingNote);
+    const updateMeetingNote = useAppStore(s => s.updateMeetingNote);
+    const deleteMeetingNote = useAppStore(s => s.deleteMeetingNote);
+    
+    // Tasks integration
+    const allTasks = useTaskStore(s => s.tasks);
+    const columns = useTaskStore(s => s.columns);
+    const clientTasks = useMemo(() => allTasks.filter(t => t.clientId === id), [allTasks, id]);
 
     const [insight, setInsight] = useState("");
     const [mounted, setMounted] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [newRoutineLabel, setNewRoutineLabel] = useState("");
     const [newRoutinePlatform, setNewRoutinePlatform] = useState<'meta' | 'google' | 'geral'>('meta');
     const [showRoutineInput, setShowRoutineInput] = useState(false);
     const [showLogForm, setShowLogForm] = useState(false);
-    const [logForm, setLogForm] = useState({ title: '', hypothesis: '', result: '', type: 'strategy' as 'strategy' | 'creative' | 'budget' | 'pause' });
+    const [logForm, setLogForm] = useState({ id: '', title: '', hypothesis: '', result: '', type: 'strategy' as 'strategy' | 'creative' | 'budget' | 'pause' });
+
+    // Meeting notes forms
+    const [showMeetingForm, setShowMeetingForm] = useState(false);
+    const [meetingForm, setMeetingForm] = useState({ id: '', subject: '', content: '' });
 
     useEffect(() => { setMounted(true); }, []);
     if (!mounted) return null;
@@ -53,15 +71,19 @@ export default function CockpitPage() {
         );
     }
 
-    const handleSaveSession = () => {
+    const handleSaveSession = async () => {
         if (!insight.trim()) return;
         setIsSaving(true);
-        setTimeout(() => {
+        try {
             saveOptimizationSession(client.id, insight);
-            setIsSaving(false);
             setInsight("");
             router.push('/');
-        }, 800);
+        } catch (err) {
+            console.error(err);
+            alert("Erro ao salvar o ciclo. Tente novamente.");
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const handleAddRoutine = () => {
@@ -73,16 +95,65 @@ export default function CockpitPage() {
 
     const handleAddLog = () => {
         if (!logForm.title.trim()) return;
-        addDecisionLog({
-            clientId: client.id,
-            date: new Date().toISOString(),
-            title: logForm.title,
-            hypothesis: logForm.hypothesis,
-            result: logForm.result,
-            type: logForm.type,
-        });
-        setLogForm({ title: '', hypothesis: '', result: '', type: 'strategy' });
+        
+        if (logForm.id) {
+            updateDecisionLog(logForm.id, {
+                title: logForm.title,
+                hypothesis: logForm.hypothesis,
+            });
+        } else {
+            addDecisionLog({
+                clientId: client.id,
+                date: new Date().toISOString(),
+                title: logForm.title,
+                hypothesis: logForm.hypothesis,
+                result: '',
+                type: 'strategy',
+            });
+        }
+        setLogForm({ id: '', title: '', hypothesis: '', result: '', type: 'strategy' });
         setShowLogForm(false);
+    };
+
+    const handleEditLog = (log: any) => {
+        setLogForm({
+            id: log.id,
+            title: log.title,
+            hypothesis: log.hypothesis || '',
+            result: log.result || '',
+            type: log.type || 'strategy'
+        });
+        setShowLogForm(true);
+    };
+
+    // Meeting Notes Handlers
+    const handleSaveMeetingNote = () => {
+        if (!meetingForm.subject.trim()) return;
+        
+        if (meetingForm.id) {
+            updateMeetingNote(meetingForm.id, {
+                subject: meetingForm.subject,
+                content: meetingForm.content
+            });
+        } else {
+            addMeetingNote({
+                clientId: client.id,
+                date: new Date().toISOString(),
+                subject: meetingForm.subject,
+                content: meetingForm.content
+            });
+        }
+        setMeetingForm({ id: '', subject: '', content: '' });
+        setShowMeetingForm(false);
+    };
+
+    const handleEditMeetingNote = (note: any) => {
+        setMeetingForm({
+            id: note.id,
+            subject: note.subject,
+            content: note.content
+        });
+        setShowMeetingForm(true);
     };
 
     const completedCount = routines.filter(r => r.done).length;
@@ -128,9 +199,17 @@ export default function CockpitPage() {
                                         <ExternalLink size={12} /> Looker
                                     </a>
                                 )}
-                                <Link href={`/clientes`} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white/[0.05] border border-card-border rounded-lg text-muted-foreground hover:text-white transition-colors">
+                                {client.driveFolderUrl && (
+                                    <a href={client.driveFolderUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-brand-500/10 border border-brand-500/30 rounded-lg text-brand-300 hover:text-white hover:bg-brand-500/20 transition-colors">
+                                        <Folder size={12} /> Pasta / Arquivos
+                                    </a>
+                                )}
+                                <button onClick={() => setShowSettingsModal(true)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white/[0.05] border border-card-border rounded-lg text-muted-foreground hover:text-white transition-colors print:hidden">
                                     <Edit2 size={12} /> Editar Cliente
-                                </Link>
+                                </button>
+                                <button onClick={() => window.print()} className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-brand-600 hover:bg-brand-500 rounded-lg text-white transition-colors print:hidden shadow-[0_0_15px_rgba(89,115,255,0.2)]">
+                                    <Download size={12} /> Exportar Relatório
+                                </button>
                             </div>
                         </div>
 
@@ -142,13 +221,9 @@ export default function CockpitPage() {
                                 </h1>
                                 <div className="flex gap-8 mt-3">
                                     <div>
-                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Pacing</p>
-                                        <div className="flex items-end gap-2">
-                                            <span className="text-xl font-mono text-white">{formatCurrency(client.currentSpend)}</span>
-                                            <span className="text-sm text-muted-foreground mb-0.5">/ {formatCurrency(client.budget)}</span>
-                                        </div>
-                                        <div className="w-48 h-1 bg-card-border mt-1.5 rounded-full overflow-hidden">
-                                            <div className={`h-full rounded-full transition-all duration-500 ${pacingPercentage > 95 ? 'bg-status-red' : pacingPercentage > 80 ? 'bg-status-yellow' : 'bg-brand-500'}`} style={{ width: `${pacingPercentage}%` }}></div>
+                                        <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold mb-1">Budget Mensal</p>
+                                        <div className="flex items-end gap-2 text-white">
+                                            <span className="text-xl font-mono">{formatCurrency(client.budget)}</span>
                                         </div>
                                     </div>
                                     <div>
@@ -182,16 +257,13 @@ export default function CockpitPage() {
                 {/* Content */}
                 <div className="p-8 overflow-y-auto">
 
-                    {/* Insight Herdado */}
+                    {/* Próximo Passo / Insight Ativo */}
                     {client.pendingInsight && (
-                        <div className="mb-6 p-4 rounded-xl bg-brand-900/10 border border-brand-500/20 flex items-start gap-3">
-                            <Clock className="text-brand-400 shrink-0 mt-0.5" size={18} />
-                            <div className="flex-1">
-                                <div className="flex justify-between items-center mb-1">
-                                    <h3 className="text-xs font-semibold text-brand-300 uppercase tracking-wider">Insight Herdado da Última Visita</h3>
-                                    <span className="text-[10px] font-mono text-muted-foreground">{client.lastOptimization}</span>
-                                </div>
-                                <p className="text-sm text-foreground leading-relaxed font-mono p-3 bg-black/40 rounded border border-card-border mt-2">{client.pendingInsight}</p>
+                        <div className="mb-6 flex items-start gap-3 p-4 rounded-xl bg-brand-600/10 border border-brand-500/30 shadow-[0_0_20px_rgba(89,115,255,0.05)]">
+                            <Zap size={18} className="text-brand-400 mt-0.5 shrink-0 animate-pulse" />
+                            <div>
+                                <p className="text-[10px] font-semibold text-brand-400 uppercase tracking-widest mb-1">⚡ Próximo Passo / Insight Ativo</p>
+                                <p className="text-sm text-brand-100 font-medium leading-relaxed">{client.pendingInsight}</p>
                             </div>
                         </div>
                     )}
@@ -204,13 +276,13 @@ export default function CockpitPage() {
                                 <div className="flex items-center justify-between mb-5">
                                     <div>
                                         <h2 className="text-base font-semibold flex items-center gap-2 text-white">
-                                            <Zap className="text-brand-400" size={18} /> The Routine Engine
+                                            <Zap className="text-brand-400" size={18} /> Rotina de Otimização
                                         </h2>
                                         <p className="text-xs text-muted-foreground mt-0.5 font-mono">{completedCount}/{routines.length} itens concluídos</p>
                                     </div>
                                     <button
                                         onClick={() => setShowRoutineInput(!showRoutineInput)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white/[0.05] border border-card-border rounded-lg text-muted-foreground hover:text-white transition-colors"
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white/[0.05] border border-card-border rounded-lg text-muted-foreground hover:text-white transition-colors print:hidden"
                                     >
                                         <Plus size={12} /> Adicionar
                                     </button>
@@ -290,19 +362,105 @@ export default function CockpitPage() {
                                     })}
                                 </div>
 
-                                {/* Feedback textarea */}
-                                <div className="mt-5 pt-5 border-t border-card-border">
-                                    <label className="block text-xs font-semibold text-brand-200 uppercase tracking-wider mb-2">
-                                        Feedback Mandatório da Visita
-                                        {insight.length > 0 && <span className="ml-2 text-brand-400 normal-case animate-pulse font-normal">escrendo...</span>}
-                                    </label>
-                                    <textarea
-                                        value={insight}
-                                        onChange={(e) => setInsight(e.target.value)}
-                                        className="w-full h-28 bg-background/80 border border-card-border rounded-lg p-4 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 text-white placeholder:text-muted-foreground/40 resize-none font-mono"
-                                        placeholder="Documente o insight desta sessão e as próximas ações..."
-                                    />
-                                    <p className="text-[10px] text-muted-foreground mt-1.5">Este texto vai aparecer na próxima visita como alerta herdado.</p>
+                                {/* Meeting Notes Integration */}
+                                <div className="mt-8 pt-6 border-t border-card-border/60">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-sm font-semibold text-brand-300 uppercase tracking-wider flex items-center gap-2">
+                                            <Presentation size={16} /> Anotações de Reuniões
+                                        </h3>
+                                        <button
+                                            onClick={() => {
+                                                setMeetingForm({ id: '', subject: '', content: '' });
+                                                setShowMeetingForm(true);
+                                            }}
+                                            className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white/[0.05] border border-card-border rounded-lg text-muted-foreground hover:text-white transition-colors print:hidden"
+                                        >
+                                            <Plus size={12} /> Nova Ata
+                                        </button>
+                                    </div>
+
+                                    {showMeetingForm && (
+                                        <div className="mb-5 p-4 rounded-xl bg-white/[0.02] border border-brand-500/20 space-y-3">
+                                            <input
+                                                value={meetingForm.subject}
+                                                onChange={e => setMeetingForm({ ...meetingForm, subject: e.target.value })}
+                                                placeholder="Assunto da Reunião (Ex: Alinhamento Mensal)"
+                                                className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 placeholder:text-muted-foreground/40"
+                                            />
+                                            <textarea
+                                                value={meetingForm.content}
+                                                onChange={e => setMeetingForm({ ...meetingForm, content: e.target.value })}
+                                                placeholder="Tópicos discutidos, próximos passos confirmados..."
+                                                rows={5}
+                                                className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 placeholder:text-muted-foreground/40 resize-none"
+                                            />
+                                            <div className="flex gap-2 justify-end">
+                                                <button onClick={() => setShowMeetingForm(false)} className="px-3 py-1.5 text-xs text-muted-foreground border border-card-border rounded-lg hover:text-white transition-colors">Cancelar</button>
+                                                <button onClick={handleSaveMeetingNote} className="px-4 py-1.5 text-xs bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-semibold transition-colors">Salvar Anotação</button>
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    <div className="space-y-3">
+                                        {meetingNotes.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground text-center py-4 bg-white/[0.02] rounded-xl border border-card-border border-dashed">Nenhuma ata de reunião registrada.</p>
+                                        ) : (
+                                            meetingNotes.map(note => (
+                                                <div key={note.id} className="bg-white/[0.03] border border-card-border rounded-lg p-4 group">
+                                                    <div className="flex justify-between items-start mb-2">
+                                                        <h4 className="text-sm text-white font-semibold">{note.subject}</h4>
+                                                        <div className="flex items-center gap-2">
+                                                            <time className="text-[10px] text-muted-foreground font-mono bg-background px-2 py-0.5 rounded border border-card-border">
+                                                                {new Date(note.date).toLocaleDateString('pt-BR')}
+                                                            </time>
+                                                            <button onClick={() => handleEditMeetingNote(note)} className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-white transition-opacity">
+                                                                <Edit2 size={12} />
+                                                            </button>
+                                                            <button onClick={() => deleteMeetingNote(note.id)} className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-status-red transition-opacity">
+                                                                <Trash2 size={12} />
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                    <p className="text-xs text-muted-foreground whitespace-pre-wrap leading-relaxed">
+                                                        {note.content}
+                                                    </p>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Task Integration */}
+                                <div className="mt-8 pt-6 border-t border-card-border/60">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-sm font-semibold text-brand-300 uppercase tracking-wider">Tarefas Ativas ({clientTasks.length})</h3>
+                                        <Link href="/tarefas" className="text-xs text-brand-400 hover:text-brand-300">Ir para Gestão de Tarefas</Link>
+                                    </div>
+                                    <div className="space-y-2">
+                                        {clientTasks.length === 0 ? (
+                                            <p className="text-sm text-muted-foreground text-center py-4 bg-white/[0.02] rounded-xl border border-card-border border-dashed">Nenhuma tarefa associada a este cliente.</p>
+                                        ) : (
+                                            clientTasks.map(task => {
+                                                const column = columns.find(c => c.id === task.columnId);
+                                                return (
+                                                    <div key={task.id} className="bg-white/[0.03] border border-card-border rounded-lg p-3 flex justify-between items-center">
+                                                        <div>
+                                                            <div className="text-sm text-white font-medium">{task.title}</div>
+                                                            <div className="text-xs text-muted-foreground flex items-center gap-2 mt-1">
+                                                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-semibold uppercase ${task.priority === 'high' ? 'bg-status-red/20 text-status-red' : task.priority === 'medium' ? 'bg-status-yellow/20 text-status-yellow' : 'bg-brand-500/20 text-brand-300'}`}>
+                                                                    {task.priority === 'high' ? 'Urgente' : task.priority === 'medium' ? 'Média' : 'Baixa'}
+                                                                </span>
+                                                                {task.dueDate && <span>{task.dueDate}</span>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-xs font-medium text-muted-foreground bg-background border border-card-border px-2 py-1 rounded">
+                                                            {column?.title || 'Sem coluna'}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        )}
+                                    </div>
                                 </div>
                             </section>
                         </div>
@@ -311,10 +469,13 @@ export default function CockpitPage() {
                         <div className="col-span-12 lg:col-span-5 space-y-4">
                             <section className="glass-panel p-6 rounded-xl border border-card-border/60">
                                 <div className="flex items-center justify-between mb-5">
-                                    <h2 className="text-base font-semibold text-white">📜 Log de Decisões</h2>
+                                    <h2 className="text-base font-semibold text-white">🧠 Log de Insights</h2>
                                     <button
-                                        onClick={() => setShowLogForm(!showLogForm)}
-                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white/[0.05] border border-card-border rounded-lg text-muted-foreground hover:text-white transition-colors"
+                                        onClick={() => {
+                                            setLogForm({ id: '', title: '', hypothesis: '', result: '', type: 'strategy' });
+                                            setShowLogForm(true);
+                                        }}
+                                        className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-white/[0.05] border border-card-border rounded-lg text-muted-foreground hover:text-white transition-colors print:hidden"
                                     >
                                         <Plus size={12} /> Registrar
                                     </button>
@@ -329,20 +490,13 @@ export default function CockpitPage() {
                                             placeholder="Título da decisão (Ex: Pausa criativo #03)"
                                             className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 placeholder:text-muted-foreground/40"
                                         />
-                                        <textarea
-                                            value={logForm.hypothesis}
-                                            onChange={e => setLogForm({ ...logForm, hypothesis: e.target.value })}
-                                            placeholder="Hipótese / Motivo da decisão..."
-                                            rows={2}
-                                            className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 placeholder:text-muted-foreground/40 resize-none"
-                                        />
-                                        <textarea
-                                            value={logForm.result}
-                                            onChange={e => setLogForm({ ...logForm, result: e.target.value })}
-                                            placeholder="Resultado observado (pode preencher depois)..."
-                                            rows={2}
-                                            className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 placeholder:text-muted-foreground/40 resize-none"
-                                        />
+                                            <textarea
+                                                value={logForm.hypothesis}
+                                                onChange={e => setLogForm({ ...logForm, hypothesis: e.target.value })}
+                                                placeholder="Insights e raciocínio para os próximos passos..."
+                                                rows={4}
+                                                className="w-full bg-background border border-card-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-brand-500 placeholder:text-muted-foreground/40 resize-none"
+                                            />
                                         <div className="flex gap-2 justify-end">
                                             <button onClick={() => setShowLogForm(false)} className="px-3 py-1.5 text-xs text-muted-foreground border border-card-border rounded-lg hover:text-white transition-colors">Cancelar</button>
                                             <button onClick={handleAddLog} className="px-4 py-1.5 text-xs bg-brand-600 hover:bg-brand-500 text-white rounded-lg font-semibold transition-colors">Salvar Log</button>
@@ -359,25 +513,28 @@ export default function CockpitPage() {
                                     )}
 
                                     {decisionLogs.map((log, i) => (
-                                        <div key={log.id} className="relative pl-8">
+                                        <div key={log.id} className="relative pl-8 group">
                                             <div className={`absolute left-0 w-5 h-5 rounded-full border-2 flex items-center justify-center -translate-y-0.5 ${i === 0 ? 'border-brand-400 bg-card' : 'border-card-border bg-background'}`}>
                                                 {i === 0 && <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />}
                                             </div>
                                             <div className="bg-white/[0.02] border border-card-border rounded-xl p-4 hover:border-brand-500/20 transition-colors">
                                                 <div className="flex items-start justify-between gap-2 mb-2">
-                                                    <span className="font-semibold text-sm text-white leading-tight">{log.title}</span>
-                                                    <time className="text-[10px] text-muted-foreground font-mono shrink-0">
-                                                        {new Date(log.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                                                    </time>
+                                                    <span className="font-semibold text-sm text-white leading-tight pr-4">{log.title}</span>
+                                                    <div className="flex items-center gap-2 shrink-0">
+                                                        <button 
+                                                            onClick={() => handleEditLog(log)}
+                                                            className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-white transition-opacity"
+                                                        >
+                                                            <Edit2 size={12} />
+                                                        </button>
+                                                        <time className="text-[10px] text-muted-foreground font-mono">
+                                                            {new Date(log.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
+                                                        </time>
+                                                    </div>
                                                 </div>
                                                 {log.hypothesis && (
-                                                    <p className="text-xs text-muted-foreground border-l-2 border-brand-500/30 pl-2 mb-1.5">
-                                                        <span className="text-brand-400 font-semibold">Hipótese: </span>{log.hypothesis}
-                                                    </p>
-                                                )}
-                                                {log.result && (
-                                                    <p className="text-xs text-muted-foreground border-l-2 border-status-green/30 pl-2">
-                                                        <span className="text-status-green font-semibold">Resultado: </span>{log.result}
+                                                    <p className="text-xs text-muted-foreground border-l-2 border-brand-500/30 pl-2 mb-1.5 whitespace-pre-wrap leading-relaxed">
+                                                        {log.hypothesis}
                                                     </p>
                                                 )}
                                             </div>
@@ -389,6 +546,12 @@ export default function CockpitPage() {
                     </div>
                 </div>
             </main>
+
+            <ClientSettingsModal 
+                isOpen={showSettingsModal} 
+                onClose={() => setShowSettingsModal(false)}
+                client={client}
+            />
         </>
     );
 }

@@ -1,30 +1,41 @@
 "use client";
 
 import Link from 'next/link';
-import { LayoutDashboard, Users, Workflow, BarChart3, Settings, Bell, Zap, ListTodo } from 'lucide-react';
+import { LayoutDashboard, Users, Workflow, BarChart3, Settings, Bell, Zap, ListTodo, Link2, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
+import { useSession, signOut } from 'next-auth/react';
+import { useState, useMemo } from 'react';
 
 export function Sidebar() {
     const pathname = usePathname();
     const zenMode = useAppStore(s => s.zenMode);
     const toggleZenMode = useAppStore(s => s.toggleZenMode);
+    const agency = useAppStore(s => s.agency);
+    const clients = useAppStore(s => s.clients);
+    const { data: session } = useSession();
+    const [showNotifications, setShowNotifications] = useState(false);
+
+    const today = new Date().toISOString().split('T')[0];
+    const overdueClients = useMemo(() => 
+        clients.filter(c => c.nextReviewDate && c.nextReviewDate < today)
+    , [clients, today]);
 
     const navItems = [
-        { label: 'The Tower', icon: LayoutDashboard, href: '/' },
-        { label: 'The Ad Lab', icon: Workflow, href: '/adlab' },
+        { label: 'Visão Geral', icon: LayoutDashboard, href: '/' },
         { label: 'Clientes & Contas', icon: Users, href: '/clientes' },
         { label: 'Gestão de Tarefas', icon: ListTodo, href: '/tarefas' },
-        { label: 'Relatórios', icon: BarChart3, href: '/relatorios' },
+        { label: 'Cases dos Clientes', icon: BarChart3, href: '/cases' },
+        { label: 'Central de Links', icon: Link2, href: '/vault' },
     ];
 
     return (
         <aside className={`w-64 border-r border-card-border bg-card/60 backdrop-blur-xl flex flex-col h-screen fixed left-0 top-0 shadow-2xl z-50 transition-all ${zenMode.active ? 'opacity-20 hover:opacity-100' : ''}`}>
             <div className="p-6">
                 <Link href="/">
-                    <h1 className="text-xl font-bold tracking-tighter flex items-center gap-2 cursor-pointer group">
+                    <h1 className="text-xl font-bold tracking-tighter flex items-center gap-1.5 cursor-pointer group">
                         <div className="w-6 h-6 rounded bg-brand-500 shadow-[0_0_15px_rgba(89,115,255,0.6)] group-hover:scale-110 transition-transform"></div>
-                        Scale<span className="text-brand-500">OS</span>
+                        <span>Scale<span className="text-white">OS</span></span>
                     </h1>
                 </Link>
                 <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest pl-8 text-brand-400">Operating System</p>
@@ -77,23 +88,78 @@ export function Sidebar() {
                     {zenMode.active && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-400 animate-pulse" />}
                 </button>
 
-                <div className="flex items-center justify-between px-3 py-2 text-muted-foreground w-full mb-2">
-                    <Bell size={16} className="hover:text-white cursor-pointer transition-colors" />
-                    <Link href="#"><Settings size={16} className="hover:text-white cursor-pointer transition-colors" /></Link>
+                <div className="relative">
+                    <div className="flex items-center justify-between px-3 py-2 text-muted-foreground w-full mb-2">
+                        <button 
+                            onClick={() => setShowNotifications(prev => !prev)}
+                            className="relative"
+                        >
+                            <Bell size={16} className="hover:text-white cursor-pointer transition-colors" />
+                            {overdueClients.length > 0 && (
+                                <span className="absolute -top-1 -right-1 w-3.5 h-3.5 rounded-full bg-status-red text-[8px] font-bold text-white flex items-center justify-center shadow-[0_0_6px_rgba(239,68,68,0.8)]">
+                                    {overdueClients.length}
+                                </span>
+                            )}
+                        </button>
+                        <Link href="/configuracoes"><Settings size={16} className="hover:text-white cursor-pointer transition-colors" /></Link>
+                    </div>
+
+                    {showNotifications && (
+                        <div className="absolute bottom-full left-0 right-0 mb-2 bg-[#111] border border-card-border rounded-xl shadow-2xl overflow-hidden z-50">
+                            <div className="px-3 py-2 border-b border-card-border flex justify-between items-center">
+                                <p className="text-xs font-semibold text-white">Notificações</p>
+                                <button onClick={() => setShowNotifications(false)} className="text-muted-foreground hover:text-white"><X size={14}/></button>
+                            </div>
+                            <div className="max-h-48 overflow-y-auto">
+                                {overdueClients.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground text-center px-3 py-4">Nenhuma revisão pendente. ✅</p>
+                                ) : (
+                                    overdueClients.map(c => (
+                                        <Link key={c.id} href={`/cockpit/${c.id}`} onClick={() => setShowNotifications(false)}
+                                            className="flex items-center gap-2 px-3 py-2.5 hover:bg-white/5 transition-colors border-b border-card-border/50 last:border-0">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-status-red shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs text-white font-medium truncate">{c.name}</p>
+                                                <p className="text-[10px] text-status-red font-mono">Revisão vencida · {c.nextReviewDate}</p>
+                                            </div>
+                                        </Link>
+                                    ))
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </div>
 
-                <div className="flex items-center gap-3 px-3 py-2 rounded-lg hover:bg-white/[0.02] cursor-pointer transition-colors">
-                    <div className="relative">
-                        <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-brand-700 to-brand-500 flex items-center justify-center text-xs font-bold text-white shadow-lg ring-2 ring-background">
-                            G
-                        </div>
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-status-green border-2 border-background"></div>
+                <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-black/20 border border-card-border mb-3">
+                    <div className="relative shrink-0">
+                        {agency?.logoUrl ? (
+                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-background ring-2 ring-brand-500/50">
+                                <img src={agency.logoUrl} alt="Logo" className="w-full h-full object-cover" />
+                            </div>
+                        ) : (
+                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-700 to-brand-500 flex items-center justify-center text-sm font-bold text-white shadow-lg border-2 border-background ring-2 ring-brand-500/50">
+                                {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : 'U'}
+                            </div>
+                        )}
+                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-status-green border-2 border-background"></div>
                     </div>
-                    <div>
-                        <p className="text-sm font-medium text-white">Gestor</p>
-                        <p className="text-[10px] text-muted-foreground font-mono">Gestor Head</p>
+                    <div className="flex-1 overflow-hidden">
+                        <p className="text-sm font-semibold text-white truncate">{session?.user?.name || 'Carregando...'}</p>
+                        <p className="text-[10px] text-muted-foreground font-mono truncate">
+                            {session?.user?.email || '...'}
+                        </p>
                     </div>
                 </div>
+
+                <button 
+                    onClick={async () => {
+                        useAppStore.persist.clearStorage();
+                        await signOut({ callbackUrl: '/login' });
+                    }}
+                    className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium text-status-red/80 hover:text-status-red hover:bg-status-red/10 border border-transparent hover:border-status-red/20 transition-all"
+                >
+                    Sair da conta
+                </button>
             </div>
         </aside>
     );
