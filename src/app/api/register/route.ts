@@ -44,8 +44,14 @@ export async function POST(req: Request) {
         email: cleanEmail,
         name: name,
         password: hashedPassword,
-        agencyId: newAgency.id,
+        currentAgencyId: newAgency.id,
         role: "ADMIN",
+        workspaces: {
+            create: {
+                agencyId: newAgency.id,
+                role: "OWNER"
+            }
+        }
       }
     });
 

@@ -57,7 +57,7 @@ export const authOptions: NextAuthOptions = {
         console.log("[AUTH] JWT callback - user logged in:", user.email);
         token.id = user.id;
         token.role = (user as any).role;
-        token.agencyId = (user as any).agencyId;
+        token.agencyId = (user as any).currentAgencyId;
         token.name = user.name;
         token.email = user.email;
       }
@@ -72,7 +72,8 @@ export const authOptions: NextAuthOptions = {
       if (token && session.user) {
         (session.user as any).id = token.id;
         (session.user as any).role = token.role;
-        (session.user as any).agencyId = token.agencyId;
+        (session.user as any).agencyId = token.agencyId; // Maintaining 'agencyId' in the Session object so UI components don't all break at once
+        (session.user as any).currentAgencyId = token.agencyId; 
         session.user.name = token.name as string;
       }
       return session;

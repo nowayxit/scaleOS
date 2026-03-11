@@ -10,7 +10,7 @@ export async function GET(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const agencyId = (session.user as any).agencyId;
+    const agencyId = (session.user as any).currentAgencyId;
     if (!agencyId) return new NextResponse("No Agency Found", { status: 404 });
 
     const agency = await prisma.agency.findUnique({
@@ -36,7 +36,7 @@ export async function PATCH(req: Request) {
         return new NextResponse("Unauthorized", { status: 401 });
       }
   
-      const agencyId = (session.user as any).agencyId;
+      const agencyId = (session.user as any).currentAgencyId;
       if (!agencyId) return new NextResponse("No Agency Found", { status: 404 });
   
       const body = await req.json();
@@ -53,7 +53,7 @@ export async function PATCH(req: Request) {
   
       // Also update the User name to reflect the Agency change mostly for the UI display
       await prisma.user.updateMany({
-        where: { agencyId: agencyId, id: (session.user as any).id },
+        where: { currentAgencyId: agencyId, id: (session.user as any).id },
         data: { name }
       });
 

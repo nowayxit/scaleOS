@@ -10,7 +10,7 @@ export async function POST(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const agencyId = (session.user as any).agencyId;
+    const agencyId = (session.user as any).currentAgencyId;
     if (!agencyId) return new NextResponse("No Agency Found", { status: 404 });
 
     const body = await req.json();
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     // Security check: verify if the client belongs to the agency
     if (clientId) {
         const client = await prisma.client.findFirst({
-            where: { id: clientId, agencyId }
+            where: { id: clientId, agencyId: agencyId }
         });
         if (!client) {
             return new NextResponse("Client not found or authorized", { status: 403 });
@@ -28,12 +28,13 @@ export async function POST(req: Request) {
 
     const taskData: any = {
       title,
-      description,
       priority: priority || "medium",
-      dueDate,
       columnId,
-      clientId,
     };
+
+    if (description) taskData.description = description;
+    if (dueDate) taskData.dueDate = dueDate;
+    if (clientId) taskData.clientId = clientId;
 
     // Assuming tags are passed as an array of tag IDs
     if (tags && tags.length > 0) {

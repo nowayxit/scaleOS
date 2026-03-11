@@ -1,16 +1,16 @@
 "use client";
 
 import Link from 'next/link';
-import { LayoutDashboard, Users, Workflow, BarChart3, Settings, Bell, Zap, ListTodo, Link2, X } from 'lucide-react';
+import { LayoutDashboard, Users, Workflow, BarChart3, Settings, Bell, Zap, ListTodo, Link2, X, MessageSquare } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { useSession, signOut } from 'next-auth/react';
 import { useState, useMemo } from 'react';
+import { PomodoroTimer } from '../PomodoroTimer';
+import { WorkspaceSwitcher } from './WorkspaceSwitcher';
 
 export function Sidebar() {
     const pathname = usePathname();
-    const zenMode = useAppStore(s => s.zenMode);
-    const toggleZenMode = useAppStore(s => s.toggleZenMode);
     const agency = useAppStore(s => s.agency);
     const clients = useAppStore(s => s.clients);
     const { data: session } = useSession();
@@ -27,10 +27,11 @@ export function Sidebar() {
         { label: 'Gestão de Tarefas', icon: ListTodo, href: '/tarefas' },
         { label: 'Cases dos Clientes', icon: BarChart3, href: '/cases' },
         { label: 'Central de Links', icon: Link2, href: '/vault' },
+        { label: 'Chat da Equipe', icon: MessageSquare, href: '/chat' },
     ];
 
     return (
-        <aside className={`w-64 border-r border-card-border bg-card/60 backdrop-blur-xl flex flex-col h-screen fixed left-0 top-0 shadow-2xl z-50 transition-all ${zenMode.active ? 'opacity-20 hover:opacity-100' : ''}`}>
+        <aside className="w-64 border-r border-card-border bg-card/60 backdrop-blur-xl flex flex-col h-screen fixed left-0 top-0 shadow-2xl z-50 transition-all">
             <div className="p-6">
                 <Link href="/">
                     <h1 className="text-xl font-bold tracking-tighter flex items-center gap-1.5 cursor-pointer group">
@@ -67,26 +68,8 @@ export function Sidebar() {
 
             <div className="p-4 border-t border-card-border mt-auto bg-black/20">
 
-                {/* Modo Foco Zen - FUNCIONAL */}
-                <button
-                    onClick={() => toggleZenMode()}
-                    className={`w-full rounded-lg p-3 mb-4 flex items-start gap-3 relative overflow-hidden transition-all cursor-pointer ${zenMode.active
-                            ? 'bg-brand-600/30 border border-brand-400/50 shadow-[0_0_20px_rgba(89,115,255,0.3)]'
-                            : 'bg-brand-600/10 border border-brand-500/20 hover:bg-brand-600/20'
-                        }`}
-                >
-                    <div className="absolute -right-4 -top-4 w-16 h-16 bg-brand-500/20 blur-xl rounded-full pointer-events-none"></div>
-                    <Zap className={`mt-0.5 shrink-0 ${zenMode.active ? 'text-brand-300' : 'text-brand-400'}`} size={16} />
-                    <div className="text-left">
-                        <p className={`text-xs font-semibold ${zenMode.active ? 'text-brand-200' : 'text-brand-300'}`}>
-                            {zenMode.active ? '⚡ Zen Mode ATIVO' : 'Modo Foco Zen'}
-                        </p>
-                        <p className="text-[10px] text-brand-200/50 mt-0.5 font-mono">
-                            {zenMode.active ? 'Clique para desativar' : 'Apagar Incêndios: OFF'}
-                        </p>
-                    </div>
-                    {zenMode.active && <div className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-400 animate-pulse" />}
-                </button>
+                {/* Pomodoro Timer */}
+                <PomodoroTimer />
 
                 <div className="relative">
                     <div className="flex items-center justify-between px-3 py-2 text-muted-foreground w-full mb-2">
@@ -130,26 +113,8 @@ export function Sidebar() {
                     )}
                 </div>
 
-                <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-black/20 border border-card-border mb-3">
-                    <div className="relative shrink-0">
-                        {agency?.logoUrl ? (
-                            <div className="w-10 h-10 rounded-full overflow-hidden border-2 border-background ring-2 ring-brand-500/50">
-                                <img src={agency.logoUrl} alt="Logo" className="w-full h-full object-cover" />
-                            </div>
-                        ) : (
-                            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-brand-700 to-brand-500 flex items-center justify-center text-sm font-bold text-white shadow-lg border-2 border-background ring-2 ring-brand-500/50">
-                                {session?.user?.name ? session.user.name.charAt(0).toUpperCase() : 'U'}
-                            </div>
-                        )}
-                        <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-status-green border-2 border-background"></div>
-                    </div>
-                    <div className="flex-1 overflow-hidden">
-                        <p className="text-sm font-semibold text-white truncate">{session?.user?.name || 'Carregando...'}</p>
-                        <p className="text-[10px] text-muted-foreground font-mono truncate">
-                            {session?.user?.email || '...'}
-                        </p>
-                    </div>
-                </div>
+                {/* Workspace / Agency Select Dropdown */}
+                <WorkspaceSwitcher />
 
                 <button 
                     onClick={async () => {

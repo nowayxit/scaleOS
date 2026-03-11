@@ -10,7 +10,7 @@ export async function GET(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const agencyId = (session.user as any).agencyId;
+    const agencyId = (session.user as any).currentAgencyId;
     if (!agencyId) return new NextResponse("No Agency Found", { status: 404 });
 
     const clients = await prisma.client.findMany({
@@ -47,7 +47,7 @@ export async function POST(req: Request) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const agencyId = (session.user as any).agencyId;
+    const agencyId = (session.user as any).currentAgencyId;
     if (!agencyId) return new NextResponse("No Agency Found", { status: 404 });
 
     const body = await req.json();

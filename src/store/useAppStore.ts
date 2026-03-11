@@ -54,10 +54,10 @@ export interface Routine {
     platform: 'meta' | 'google' | 'geral';
 }
 
-export interface ZenMode {
+export interface PomodoroState {
     active: boolean;
-    clientId: string | null;
-    startedAt: string | null;
+    timeLeft: number; // in seconds
+    mode: 'work' | 'break';
 }
 
 export interface Agency {
@@ -74,7 +74,7 @@ interface AppState {
     decisionLogs: DecisionLog[];
     creatives: Creative[];
     routines: Routine[];
-    zenMode: ZenMode;
+    pomodoro: PomodoroState;
     cases: ClientCase[];
     meetingNotes: MeetingNote[];
     globalTaskFilter: string;
@@ -119,8 +119,10 @@ interface AppState {
     updateCreative: (id: string, updates: Partial<Creative>) => void;
     deleteCreative: (id: string) => void;
 
-    // Zen Mode
-    toggleZenMode: (clientId?: string) => void;
+    // Pomodoro Timer
+    setPomodoroState: (updates: Partial<PomodoroState>) => void;
+    
+    // Global Kanban filter
     setGlobalTaskFilter: (clientId: string) => void;
 }
 
@@ -178,7 +180,7 @@ export const useAppStore = create<AppState>()(
             cases: [],
             meetingNotes: [],
             routines: [],
-            zenMode: { active: false, clientId: null, startedAt: null },
+            pomodoro: { active: false, timeLeft: 25 * 60, mode: 'work' },
             globalTaskFilter: 'all',
 
             setGlobalTaskFilter: (clientId) => set({ globalTaskFilter: clientId }),
@@ -495,15 +497,9 @@ export const useAppStore = create<AppState>()(
                 fetch(`/api/meeting-notes/${id}`, { method: 'DELETE' }).catch(err => console.error("Failed to delete note", err));
             },
 
-            toggleZenMode: (clientId) =>
+            setPomodoroState: (updates) =>
                 set((state) => ({
-                    zenMode: state.zenMode.active
-                        ? { active: false, clientId: null, startedAt: null }
-                        : {
-                            active: true,
-                            clientId: clientId || null,
-                            startedAt: new Date().toISOString(),
-                        },
+                    pomodoro: { ...state.pomodoro, ...updates },
                 })),
         }),
         {

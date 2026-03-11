@@ -48,8 +48,12 @@ model User {
   accounts      Account[]
   sessions      Session[]
   
-  agencyId      String?
-  agency        Agency?   @relation(fields: [agencyId], references: [id])
+  // M:N Relation for Workspaces
+  workspaces    WorkspaceMember[]
+  
+  // Current active workspace
+  currentAgencyId String?
+  messages      Message[]
 }
 
 model VerificationToken {
@@ -58,6 +62,21 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// Workspace & Permissions
+
+model WorkspaceMember {
+  id        String   @id @default(cuid())
+  userId    String
+  agencyId  String
+  role      String   @default("MEMBER") // 'OWNER', 'ADMIN', 'MEMBER'
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, agencyId])
 }
 
 // ScaleOS Core Models
@@ -70,8 +89,21 @@ model Agency {
   logoUrl         String?
   defaultRoutines String?
   
-  users           User[]
+  members         WorkspaceMember[]
   clients         Client[]
+  messages        Message[]
+}
+
+model Message {
+  id        String   @id @default(cuid())
+  content   String
+  createdAt DateTime @default(now())
+  
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  agencyId  String
+  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
 }
 
 model Client {
@@ -84,7 +116,7 @@ model Client {
   currency        String   @default("BRL")
   healthStatus    String   @default("good") // 'good', 'warning', 'critical'
   avatarUrl       String?
-  pendingInsight   String?  @db.Text
+  pendingInsight   String?
   lastOptimization String?
   
   // URLs
@@ -171,8 +203,8 @@ model Routine {
 model OptimizationSession {
   id               String   @id @default(cuid())
   date             DateTime @default(now())
-  insight          String   @db.Text
-  completedRoutines String?  @db.Text // Store JSON array of routine labels done in this session
+  insight          String
+  completedRoutines String? // Store JSON array of routine labels done in this session
   
   clientId         String
   client           Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
