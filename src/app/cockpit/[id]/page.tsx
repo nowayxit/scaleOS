@@ -49,12 +49,29 @@ export default function CockpitPage() {
     const [showRoutineInput, setShowRoutineInput] = useState(false);
     const [showLogForm, setShowLogForm] = useState(false);
     const [logForm, setLogForm] = useState({ id: '', title: '', hypothesis: '', result: '', type: 'strategy' as 'strategy' | 'creative' | 'budget' | 'pause' });
+    const [optimizationSessions, setOptimizationSessions] = useState<any[]>([]);
 
     // Meeting notes forms
     const [showMeetingForm, setShowMeetingForm] = useState(false);
     const [meetingForm, setMeetingForm] = useState({ id: '', subject: '', content: '' });
 
-    useEffect(() => { setMounted(true); }, []);
+    useEffect(() => { 
+        setMounted(true); 
+        // Fetch optimization sessions
+        const fetchSessions = async () => {
+            try {
+                const res = await fetch(`/api/optimization-sessions?clientId=${id}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    setOptimizationSessions(data);
+                }
+            } catch (err) {
+                console.error("Failed to load sessions", err);
+            }
+        };
+        fetchSessions();
+    }, [id]);
+
     if (!mounted) return null;
 
     if (!client) {
@@ -75,7 +92,24 @@ export default function CockpitPage() {
         if (!insight.trim()) return;
         setIsSaving(true);
         try {
+            const completedRoutinesList = routines.filter(r => r.done).map(r => r.label);
+
+            const res = await fetch('/api/optimization-sessions', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    clientId: client.id,
+                    insight: insight,
+                    completedRoutines: completedRoutinesList
+                })
+            });
+
+            if (!res.ok) throw new Error("Failed to save session");
+
+            // Also call the local state updater so the UX reacts immediately 
+            // without waiting for a re-fetch of the client table on Home page
             saveOptimizationSession(client.id, insight);
+            
             setInsight("");
             router.push('/');
         } catch (err) {
@@ -504,38 +538,40 @@ export default function CockpitPage() {
                                     </div>
                                 )}
 
-                                {/* Timeline */}
+                                {/* Timeline / Histórico */}
                                 <div className="space-y-4 relative">
                                     <div className="absolute left-2 top-0 bottom-0 w-0.5 bg-gradient-to-b from-brand-500/40 via-card-border to-transparent"></div>
 
-                                    {decisionLogs.length === 0 && (
-                                        <p className="text-sm text-muted-foreground text-center py-6 ml-6">Nenhuma decisão registrada ainda.</p>
+                                    {optimizationSessions.length === 0 && (
+                                        <p className="text-sm text-muted-foreground text-center py-6 ml-6">Nenhuma sessão de otimização registrada.</p>
                                     )}
 
-                                    {decisionLogs.map((log, i) => (
-                                        <div key={log.id} className="relative pl-8 group">
+                                    {optimizationSessions.map((session: any, i: number) => (
+                                        <div key={session.id} className="relative pl-8 group">
                                             <div className={`absolute left-0 w-5 h-5 rounded-full border-2 flex items-center justify-center -translate-y-0.5 ${i === 0 ? 'border-brand-400 bg-card' : 'border-card-border bg-background'}`}>
                                                 {i === 0 && <div className="w-2 h-2 rounded-full bg-brand-400 animate-pulse" />}
                                             </div>
                                             <div className="bg-white/[0.02] border border-card-border rounded-xl p-4 hover:border-brand-500/20 transition-colors">
                                                 <div className="flex items-start justify-between gap-2 mb-2">
-                                                    <span className="font-semibold text-sm text-white leading-tight pr-4">{log.title}</span>
-                                                    <div className="flex items-center gap-2 shrink-0">
-                                                        <button 
-                                                            onClick={() => handleEditLog(log)}
-                                                            className="opacity-0 group-hover:opacity-100 p-1 text-muted-foreground hover:text-white transition-opacity"
-                                                        >
-                                                            <Edit2 size={12} />
-                                                        </button>
-                                                        <time className="text-[10px] text-muted-foreground font-mono">
-                                                            {new Date(log.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short' })}
-                                                        </time>
-                                                    </div>
+                                                    <span className="font-semibold text-sm text-brand-300 leading-tight">Ciclo de Otimização</span>
+                                                    <time className="text-[10px] text-muted-foreground font-mono bg-background px-2 py-0.5 rounded border border-card-border">
+                                                        {new Date(session.date).toLocaleDateString('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                                                    </time>
                                                 </div>
-                                                {log.hypothesis && (
-                                                    <p className="text-xs text-muted-foreground border-l-2 border-brand-500/30 pl-2 mb-1.5 whitespace-pre-wrap leading-relaxed">
-                                                        {log.hypothesis}
-                                                    </p>
+                                                <p className="text-xs text-white mb-3 whitespace-pre-wrap leading-relaxed">
+                                                    {session.insight}
+                                                </p>
+                                                {session.completedRoutines && JSON.parse(session.completedRoutines).length > 0 && (
+                                                    <div className="mt-3 pt-3 border-t border-card-border border-dashed">
+                                                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold mb-2">Rotinas Concluídas</p>
+                                                        <ul className="space-y-1">
+                                                            {JSON.parse(session.completedRoutines).map((routine: string, idx: number) => (
+                                                                <li key={idx} className="text-xs text-muted-foreground flex items-center gap-1.5">
+                                                                    <CheckCircle2 size={12} className="text-brand-500/70" /> {routine}
+                                                                </li>
+                                                            ))}
+                                                        </ul>
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>

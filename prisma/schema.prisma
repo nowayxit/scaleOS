@@ -84,6 +84,8 @@ model Client {
   currency        String   @default("BRL")
   healthStatus    String   @default("good") // 'good', 'warning', 'critical'
   avatarUrl       String?
+  pendingInsight   String?  @db.Text
+  lastOptimization String?
   
   // URLs
   adsManagerUrl   String?
@@ -163,6 +165,16 @@ model Routine {
 
   clientId   String
   client     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model OptimizationSession {
+  id               String   @id @default(cuid())
+  date             DateTime @default(now())
+  insight          String   @db.Text
+  completedRoutines String?  @db.Text // Store JSON array of routine labels done in this session
+  
+  clientId         String
+  client           Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
 }
 
 // Kanban Task Models
