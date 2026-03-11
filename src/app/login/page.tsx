@@ -24,6 +24,7 @@ export default function LoginPage() {
 
     if (isLogin) {
       // Handle Login
+      console.log("[LOGIN] Attempting login for:", formData.email);
       try {
         const res = await signIn("credentials", {
           redirect: false,
@@ -31,19 +32,25 @@ export default function LoginPage() {
           password: formData.password,
         });
 
+        console.log("[LOGIN] Response:", res);
+
         if (res?.error) {
+          console.error("[LOGIN] Error:", res.error);
           setError(res.error);
         } else {
+          console.log("[LOGIN] Success, redirecting...");
           router.push("/");
-          router.refresh(); // Force reload to apply session
+          router.refresh();
         }
       } catch (err) {
+        console.error("[LOGIN] Exception:", err);
         setError("Erro ao fazer login. Tente novamente.");
       } finally {
         setIsLoading(false);
       }
     } else {
       // Handle Register
+      console.log("[REGISTER] Attempting registration for:", formData.email);
       try {
         const res = await fetch("/api/register", {
           method: "POST",
@@ -51,20 +58,26 @@ export default function LoginPage() {
           body: JSON.stringify(formData),
         });
 
+        console.log("[REGISTER] API Status:", res.status);
+
         if (res.ok) {
-          // Auto login after register
-          await signIn("credentials", {
+          console.log("[REGISTER] Success, attempting auto-login...");
+          const signInRes = await signIn("credentials", {
             redirect: false,
             email: formData.email,
             password: formData.password,
           });
+          
+          console.log("[REGISTER] Auto-login response:", signInRes);
           router.push("/");
           router.refresh();
         } else {
           const data = await res.json();
+          console.warn("[REGISTER] API Error:", data);
           setError(data.message || "Erro ao registrar conta.");
         }
       } catch (err) {
+        console.error("[REGISTER] Exception:", err);
         setError("Erro de rede. Tente novamente.");
       } finally {
         setIsLoading(false);
