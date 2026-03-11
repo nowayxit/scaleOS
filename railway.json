@@ -4,7 +4,7 @@
     "builder": "NIXPACKS"
   },
   "deploy": {
-    "startCommand": "npx prisma migrate deploy && npm run start",
+    "startCommand": "npx prisma migrate resolve --applied 20260311_000001_baseline 2>/dev/null; npx prisma migrate deploy && npm run start",
     "healthcheckPath": "/login",
     "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
