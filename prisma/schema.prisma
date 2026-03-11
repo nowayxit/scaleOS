@@ -103,6 +103,7 @@ model Client {
   cases           ClientCase[]
   meetingNotes    MeetingNote[]
   tasks           Task[]
+  optimizationSessions OptimizationSession[]
 }
 
 model DecisionLog {
