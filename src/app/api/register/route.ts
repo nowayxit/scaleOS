@@ -5,8 +5,10 @@ import prisma from "@/lib/prisma";
 export async function POST(req: Request) {
   try {
     const { email, password, name } = await req.json();
+    console.log("[REGISTER] New attempt for:", email);
 
     if (!email || !password) {
+      console.warn("[REGISTER] Missing email or password");
       return NextResponse.json({ message: "Email and password are required" }, { status: 400 });
     }
 
@@ -18,6 +20,7 @@ export async function POST(req: Request) {
     });
 
     if (existingUser) {
+      console.warn("[REGISTER] Email already exists:", cleanEmail);
       return NextResponse.json({ message: "Email já cadastrado" }, { status: 409 });
     }
 
@@ -25,6 +28,7 @@ export async function POST(req: Request) {
     const hashedPassword = await bcrypt.hash(password, 10);
 
     // Create user and a default agency for them
+    console.log("[REGISTER] Creating agency...");
     const newAgency = await prisma.agency.create({
       data: {
         name: `Agência de ${name || cleanEmail.split('@')[0]}`,
@@ -32,6 +36,7 @@ export async function POST(req: Request) {
       }
     });
 
+    console.log("[REGISTER] Creating user...");
     const user = await prisma.user.create({
       data: {
         email: cleanEmail,
@@ -43,6 +48,7 @@ export async function POST(req: Request) {
     });
 
     // --- ONBOARDING: Create Model Client & Data ---
+    console.log("[REGISTER] Running onboarding for:", user.id);
     const modelClient = await prisma.client.create({
       data: {
         name: "Cliente Modelo - ScaleOS",
@@ -74,6 +80,7 @@ export async function POST(req: Request) {
     });
 
     // Create default Kanban Columns if they don't exist (shared globally or just one-off for now)
+    console.log("[REGISTER] Setting up Kanban...");
     let backlogCol = await prisma.column.findFirst({ where: { title: "A Fazer" } });
     if (!backlogCol) {
       backlogCol = await prisma.column.create({ data: { title: "A Fazer", order: 0 } });
@@ -92,11 +99,11 @@ export async function POST(req: Request) {
         columnId: backlogCol.id,
       }
     });
-    // ----------------------------------------------
 
+    console.log("[REGISTER] Success for:", cleanEmail);
     return NextResponse.json({ message: "User registered successfully", userId: user.id }, { status: 201 });
   } catch (error) {
-    console.error("Registration error:", error);
+    console.error("[REGISTER] Critical Error:", error);
     return NextResponse.json({ message: "Ocorreu um erro no servidor" }, { status: 500 });
   }
 }
