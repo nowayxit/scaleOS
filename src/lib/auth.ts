@@ -54,6 +54,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user, trigger, session }) {
       if (user) {
+        console.log("[AUTH] JWT callback - user logged in:", user.email);
         token.id = user.id;
         token.role = (user as any).role;
         token.agencyId = (user as any).agencyId;
@@ -78,5 +79,16 @@ export const authOptions: NextAuthOptions = {
     }
   },
   secret: process.env.NEXTAUTH_SECRET,
-  debug: process.env.NODE_ENV === "development",
+  debug: true, // Force debug in production to see auth logs in Railway
+  cookies: {
+    sessionToken: {
+      name: process.env.NODE_ENV === "production" ? "__Secure-next-auth.session-token" : "next-auth.session-token",
+      options: {
+        httpOnly: true,
+        sameSite: "lax",
+        path: "/",
+        secure: process.env.NODE_ENV === "production",
+      },
+    },
+  },
 };

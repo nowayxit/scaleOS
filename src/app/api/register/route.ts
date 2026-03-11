@@ -6,6 +6,8 @@ export async function POST(req: Request) {
   try {
     const { email, password, name } = await req.json();
     console.log("[REGISTER] New attempt for:", email);
+    console.log("[REGISTER] env.NEXTAUTH_URL:", process.env.NEXTAUTH_URL);
+    console.log("[REGISTER] env.NODE_ENV:", process.env.NODE_ENV);
 
     if (!email || !password) {
       console.warn("[REGISTER] Missing email or password");
