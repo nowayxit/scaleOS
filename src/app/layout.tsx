@@ -11,6 +11,7 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from "@/components/providers/AuthProvider";
 import { DataProvider } from "@/components/providers/DataProvider";
+import { ChatPopup } from "@/components/ChatPopup";
 
 export default function RootLayout({
   children,
@@ -23,6 +24,7 @@ export default function RootLayout({
         <AuthProvider>
           <DataProvider>
             {children}
+            <ChatPopup />
           </DataProvider>
         </AuthProvider>
       </body>

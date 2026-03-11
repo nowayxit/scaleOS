@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { LayoutDashboard, Users, Workflow, BarChart3, Settings, Bell, Zap, ListTodo, Link2, X, MessageSquare } from 'lucide-react';
+import { LayoutDashboard, Users, Workflow, BarChart3, Settings, Bell, Zap, ListTodo, Link2, X } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { useSession, signOut } from 'next-auth/react';
@@ -27,7 +27,6 @@ export function Sidebar() {
         { label: 'Gestão de Tarefas', icon: ListTodo, href: '/tarefas' },
         { label: 'Cases dos Clientes', icon: BarChart3, href: '/cases' },
         { label: 'Central de Links', icon: Link2, href: '/vault' },
-        { label: 'Chat da Equipe', icon: MessageSquare, href: '/chat' },
     ];
 
     return (

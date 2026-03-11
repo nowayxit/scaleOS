@@ -53,7 +53,8 @@ model User {
   
   // Current active workspace
   currentAgencyId String?
-  messages      Message[]
+  messages             Message[]
+  conversationMembers  ConversationMember[]
 }
 
 model VerificationToken {
@@ -91,19 +92,46 @@ model Agency {
   
   members         WorkspaceMember[]
   clients         Client[]
-  messages        Message[]
+  conversations   Conversation[]
+}
+
+// Chat Models
+
+model Conversation {
+  id        String   @id @default(cuid())
+  type      String   @default("direct") // 'direct' | 'group'
+  name      String?  // only for groups
+  createdAt DateTime @default(now())
+
+  agencyId  String
+  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  members   ConversationMember[]
+  messages  Message[]
+}
+
+model ConversationMember {
+  id             String   @id @default(cuid())
+  conversationId String
+  userId         String
+  joinedAt       DateTime @default(now())
+
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
 }
 
 model Message {
-  id        String   @id @default(cuid())
-  content   String
-  createdAt DateTime @default(now())
-  
-  userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  
-  agencyId  String
-  agency    Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  id             String   @id @default(cuid())
+  content        String
+  createdAt      DateTime @default(now())
+
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Client {
