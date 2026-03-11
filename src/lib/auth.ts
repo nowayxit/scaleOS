@@ -14,25 +14,34 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error("Credenciais inválidas");
+        try {
+          if (!credentials?.email || !credentials?.password) {
+            console.error("[AUTH] Missing credentials");
+            throw new Error("Credenciais inválidas");
+          }
+
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email.toLowerCase() }
+          });
+
+          if (!user || !user.password) {
+            console.error("[AUTH] User not found:", credentials.email);
+            throw new Error("Usuário não encontrado");
+          }
+
+          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
+
+          if (!isPasswordValid) {
+            console.error("[AUTH] Invalid password for:", credentials.email);
+            throw new Error("Senha incorreta");
+          }
+
+          console.log("[AUTH] Successful login:", credentials.email);
+          return user;
+        } catch (err) {
+          console.error("[AUTH] Authorization error:", err);
+          throw err;
         }
-
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email.toLowerCase() }
-        });
-
-        if (!user || !user.password) {
-          throw new Error("Usuário não encontrado");
-        }
-
-        const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-
-        if (!isPasswordValid) {
-          throw new Error("Senha incorreta");
-        }
-
-        return user;
       }
     })
   ],
@@ -52,7 +61,6 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
       }
       
-      // Quando usarmos `update({ name: 'Novo' })` via useSession, ele vai cair aqui
       if (trigger === "update" && session?.name) {
         token.name = session.name;
       }
@@ -69,5 +77,6 @@ export const authOptions: NextAuthOptions = {
       return session;
     }
   },
-  secret: process.env.NEXTAUTH_SECRET || "scaleos-saas-secret-key-123456",
+  secret: process.env.NEXTAUTH_SECRET,
+  debug: process.env.NODE_ENV === "development",
 };
