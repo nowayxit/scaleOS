@@ -11,6 +11,7 @@ interface ClientTableProps {
 
 export function ClientTable({ filter = 'all' }: ClientTableProps) {
     const clients = useAppStore((state) => state.clients);
+    const decisionLogs = useAppStore((state) => state.decisionLogs);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => { setMounted(true); }, []);
@@ -19,6 +20,12 @@ export function ClientTable({ filter = 'all' }: ClientTableProps) {
         new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
 
     const displayed = filter === 'all' ? clients : clients.filter(c => c.healthStatus === filter);
+
+    const getLatestLogForClient = (clientId: string) => {
+        const clientLogs = decisionLogs.filter(log => log.clientId === clientId);
+        // Assuming logs are already sorted desc by date, but just to be sure we return the first one
+        return clientLogs[0] || null;
+    };
 
     const renderPacingBar = (spend: number, budget: number) => {
         const percentage = Math.min((spend / budget) * 100, 100);
@@ -78,55 +85,58 @@ export function ClientTable({ filter = 'all' }: ClientTableProps) {
                                 </td>
                             </tr>
                         )}
-                        {displayed.map((client) => (
-                            <tr key={client.id} className="table-row-hover group">
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <div className="flex items-center gap-3">
-                                        <div className="mt-0.5">{getHealthIcon(client.healthStatus)}</div>
-                                        <div>
-                                            <div className="font-semibold text-foreground group-hover:text-brand-300 transition-colors">
-                                                {client.name}
+                        {displayed.map((client) => {
+                            const latestLog = getLatestLogForClient(client.id);
+                            return (
+                                <tr key={client.id} className="table-row-hover group">
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <div className="flex items-center gap-3">
+                                            <div className="mt-0.5">{getHealthIcon(client.healthStatus)}</div>
+                                            <div>
+                                                <div className="font-semibold text-foreground group-hover:text-brand-300 transition-colors">
+                                                    {client.name}
+                                                </div>
+                                                <div className="text-xs text-muted-foreground">{client.niche}</div>
                                             </div>
-                                            <div className="text-xs text-muted-foreground">{client.niche}</div>
                                         </div>
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4">
-                                    {renderPacingBar(client.currentSpend, client.budget)}
-                                </td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium font-mono ${client.lastOptimization === 'Agora mesmo' ? 'bg-status-green/20 text-status-green border border-status-green/30' : 'bg-white/[0.05] text-muted-foreground'}`}>
-                                        {client.lastOptimization}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-xs text-muted-foreground leading-relaxed">
-                                    <div className="line-clamp-2 pr-4 pl-2 border-l-2 border-brand-500/30 max-w-xs">
-                                        {client.pendingInsight || "Nenhum insight pendente."}
-                                    </div>
-                                </td>
-                                <td className="px-6 py-4 text-right whitespace-nowrap">
-                                    <div className="flex items-center justify-end gap-2">
-                                        {client.driveFolderUrl && (
-                                            <a 
-                                                href={client.driveFolderUrl} 
-                                                target="_blank" 
-                                                rel="noopener noreferrer"
-                                                className="inline-flex items-center justify-center rounded-md text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 px-3 py-2 h-8 transition-colors"
-                                                title="Abrir Pasta/Drive do Cliente"
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        {renderPacingBar(client.currentSpend, client.budget)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <span className={`inline-flex items-center rounded-md px-2 py-1 text-xs font-medium font-mono ${client.lastOptimization === 'Agora mesmo' ? 'bg-status-green/20 text-status-green border border-status-green/30' : 'bg-white/[0.05] text-muted-foreground'}`}>
+                                            {client.lastOptimization || "Pendente"}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-xs text-muted-foreground leading-relaxed">
+                                        <div className="line-clamp-2 pr-4 pl-2 border-l-2 border-brand-500/30 max-w-xs">
+                                            {client.pendingInsight || latestLog?.hypothesis || latestLog?.title || "Nenhum insight pendente."}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 text-right whitespace-nowrap">
+                                        <div className="flex items-center justify-end gap-2">
+                                            {client.driveFolderUrl && (
+                                                <a 
+                                                    href={client.driveFolderUrl} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="inline-flex items-center justify-center rounded-md text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/20 px-3 py-2 h-8 transition-colors"
+                                                    title="Abrir Pasta/Drive do Cliente"
+                                                >
+                                                    <Folder size={16} />
+                                                </a>
+                                            )}
+                                            <Link
+                                                href={`/cockpit/${client.id}`}
+                                                className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-brand-600 hover:bg-brand-500 text-white shadow px-4 py-2 opacity-0 group-hover:opacity-100 h-8"
                                             >
-                                                <Folder size={16} />
-                                            </a>
-                                        )}
-                                        <Link
-                                            href={`/cockpit/${client.id}`}
-                                            className="inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors bg-brand-600 hover:bg-brand-500 text-white shadow px-4 py-2 opacity-0 group-hover:opacity-100 h-8"
-                                        >
-                                            Abrir Cockpit
-                                        </Link>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                                                Abrir Cockpit
+                                            </Link>
+                                        </div>
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>
