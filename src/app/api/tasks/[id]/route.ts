@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -13,11 +13,9 @@ export async function DELETE(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     if (!id) return new NextResponse("Task ID required", { status: 400 });
 
-    // Assuming we do not have hard multi-tenant isolation at the task level right now, 
-    // but in a real app we'd verify the task belongs to a client owned by the agency.
     await prisma.task.delete({
       where: { id }
     });
@@ -31,7 +29,7 @@ export async function DELETE(
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -39,7 +37,7 @@ export async function PUT(
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { id } = params;
+    const { id } = await params;
     if (!id) return new NextResponse("Task ID required", { status: 400 });
 
     const body = await req.json();
@@ -48,9 +46,8 @@ export async function PUT(
     const updateData: any = { ...updates };
 
     if (tags !== undefined) {
-        // If passing tags as array of IDs, we disconnect all existing and connect new ones
         updateData.tags = {
-            set: [], // Clear existing
+            set: [],
             connect: tags.map((tagId: string) => ({ id: tagId }))
         };
     }

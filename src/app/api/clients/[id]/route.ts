@@ -5,7 +5,7 @@ import prisma from "@/lib/prisma";
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -16,7 +16,7 @@ export async function DELETE(
     const agencyId = (session.user as any).agencyId;
     if (!agencyId) return new NextResponse("No Agency Found", { status: 404 });
 
-    const { id } = params;
+    const { id } = await params;
     if (!id) return new NextResponse("Client ID Requirido", { status: 400 });
 
     const client = await prisma.client.findFirst({
@@ -40,7 +40,7 @@ export async function DELETE(
 
 export async function PUT(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await getServerSession(authOptions);
@@ -51,7 +51,7 @@ export async function PUT(
     const agencyId = (session.user as any).agencyId;
     if (!agencyId) return new NextResponse("No Agency Found", { status: 404 });
 
-    const { id } = params;
+    const { id } = await params;
     if (!id) return new NextResponse("Client ID Requirido", { status: 400 });
 
     const body = await req.json();

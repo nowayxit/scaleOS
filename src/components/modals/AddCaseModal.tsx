@@ -40,7 +40,9 @@ export function AddCaseModal({ onClose, editingCase }: AddCaseModalProps) {
     const handleSave = () => {
         if (!validate()) return;
         
+        const matchedClient = clients.find(c => c.name === clientName);
         const payload = {
+            clientId: matchedClient?.id || null,
             clientName,
             strategy,
             investment: parseFloat(investment),
