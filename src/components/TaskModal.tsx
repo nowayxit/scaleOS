@@ -13,8 +13,11 @@ interface TaskModalProps {
 }
 
 export function TaskModal({ isOpen, onClose, taskToEdit }: TaskModalProps) {
-  const { addTask, updateTask, deleteTask, tags, addTag, columns } = useTaskStore();
+  const { addTask, updateTask, deleteTask, tags, addTag, columns: storeColumns } = useTaskStore();
   const clients = useAppStore(state => state.clients);
+  
+  // Always fetch fresh columns from DB to avoid stale localStorage IDs
+  const [columns, setColumns] = useState(storeColumns);
 
   const [title, setTitle] = useState('');
   const [clientId, setClientId] = useState('');
@@ -28,6 +31,22 @@ export function TaskModal({ isOpen, onClose, taskToEdit }: TaskModalProps) {
   const [newTagInput, setNewTagInput] = useState('');
   const [showNewTagOpts, setShowNewTagOpts] = useState(false);
   const [newCommentInput, setNewCommentInput] = useState('');
+
+  // Fetch fresh real columns from DB whenever modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/columns')
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data && data.length > 0) {
+            setColumns(data);
+            // Also sync to store so TaskBoard shows correct column names
+            useTaskStore.setState({ columns: data });
+          }
+        })
+        .catch(() => {/* fallback to store columns */});
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (taskToEdit) {

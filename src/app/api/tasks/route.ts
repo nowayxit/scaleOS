@@ -3,6 +3,23 @@ import { getServerSession } from "next-auth/next";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+// Helper: ensure default columns exist and return the first one
+async function ensureDefaultColumns() {
+  let columns = await prisma.column.findMany({ orderBy: { order: "asc" } });
+  if (columns.length === 0) {
+    // Create default columns if none exist yet
+    await prisma.column.createMany({
+      data: [
+        { title: "A Fazer", order: 0 },
+        { title: "Em Progresso", order: 1 },
+        { title: "Concluído", order: 2 },
+      ]
+    });
+    columns = await prisma.column.findMany({ orderBy: { order: "asc" } });
+  }
+  return columns;
+}
+
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
@@ -26,17 +43,30 @@ export async function POST(req: Request) {
         }
     }
 
+    // Resolve columnId — if it's missing or doesn't exist in DB, use first real column
+    let resolvedColumnId = columnId;
+    if (columnId) {
+      const col = await prisma.column.findUnique({ where: { id: columnId } });
+      if (!col) {
+        resolvedColumnId = null; // column ID is invalid (fake local ID)
+      }
+    }
+
+    if (!resolvedColumnId) {
+      const columns = await ensureDefaultColumns();
+      resolvedColumnId = columns[0].id;
+    }
+
     const taskData: any = {
       title,
       priority: priority || "medium",
-      columnId,
+      columnId: resolvedColumnId,
     };
 
     if (description) taskData.description = description;
     if (dueDate) taskData.dueDate = dueDate;
     if (clientId) taskData.clientId = clientId;
 
-    // Assuming tags are passed as an array of tag IDs
     if (tags && tags.length > 0) {
         taskData.tags = {
             connect: tags.map((tagId: string) => ({ id: tagId }))
