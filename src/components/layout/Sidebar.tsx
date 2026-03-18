@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { LayoutDashboard, Users, Workflow, BarChart3, Settings, Bell, Zap, ListTodo, Link2, X } from 'lucide-react';
+import { LayoutDashboard, Users, Workflow, BarChart3, Settings, Bell, Zap, ListTodo, Link2, X, BarChart2 } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { useSession, signOut } from 'next-auth/react';
@@ -26,6 +26,7 @@ export function Sidebar() {
         { label: 'Clientes & Contas', icon: Users, href: '/clientes' },
         { label: 'Gestão de Tarefas', icon: ListTodo, href: '/tarefas' },
         { label: 'Cases dos Clientes', icon: BarChart3, href: '/cases' },
+        { label: 'Produtividade', icon: BarChart2, href: '/produtividade' },
         { label: 'Central de Links', icon: Link2, href: '/vault' },
     ];
 
@@ -83,6 +84,7 @@ export function Sidebar() {
                                 </span>
                             )}
                         </button>
+                        <Link href="/configuracoes/membros"><Users size={16} className="hover:text-white cursor-pointer transition-colors" /></Link>
                         <Link href="/configuracoes"><Settings size={16} className="hover:text-white cursor-pointer transition-colors" /></Link>
                     </div>
 

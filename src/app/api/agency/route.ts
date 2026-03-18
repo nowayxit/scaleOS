@@ -63,3 +63,45 @@ export async function PATCH(req: Request) {
       return new NextResponse("Internal Error", { status: 500 });
     }
 }
+
+export async function POST(req: Request) {
+  try {
+    const session = await getServerSession(authOptions);
+    if (!session || !session.user) {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const body = await req.json();
+    const { name } = body;
+
+    if (!name) {
+      return new NextResponse("Name is required", { status: 400 });
+    }
+
+    const userId = (session.user as any).id;
+
+    // Create the new agency and add the user as OWNER
+    const agency = await prisma.agency.create({
+      data: {
+        name,
+        members: {
+          create: {
+            userId,
+            role: "OWNER"
+          }
+        }
+      }
+    });
+
+    // Update the user's current active agency to the newly created one
+    await prisma.user.update({
+      where: { id: userId },
+      data: { currentAgencyId: agency.id }
+    });
+
+    return NextResponse.json(agency);
+  } catch (error) {
+    console.error("[AGENCY_POST]", error);
+    return new NextResponse("Internal Error", { status: 500 });
+  }
+}

@@ -24,6 +24,11 @@ export function WorkspaceSwitcher() {
     const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [isSwitching, setIsSwitching] = useState(false);
+    
+    // Create new workspace modal state
+    const [showCreateModal, setShowCreateModal] = useState(false);
+    const [newWorkspaceName, setNewWorkspaceName] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
 
     const currentAgencyId = (session?.user as any)?.currentAgencyId;
 
@@ -67,6 +72,29 @@ export function WorkspaceSwitcher() {
         } catch (error) {
             console.error("Failed to switch workspace", error);
             setIsSwitching(false);
+        }
+    };
+
+    const handleCreate = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!newWorkspaceName.trim()) return;
+        
+        setIsCreating(true);
+        try {
+            const res = await fetch('/api/agency', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: newWorkspaceName.trim() })
+            });
+
+            if (res.ok) {
+                const newAgency = await res.json();
+                await update({ currentAgencyId: newAgency.id });
+                window.location.href = '/'; 
+            }
+        } catch (error) {
+            console.error("Failed to create workspace", error);
+            setIsCreating(false);
         }
     };
 
@@ -148,7 +176,10 @@ export function WorkspaceSwitcher() {
                         <Menu.Item>
                             {({ active }) => (
                                 <button
-                                    onClick={() => alert("Criar Nova Agência em breve!")}
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        setShowCreateModal(true);
+                                    }}
                                     className={`w-full flex items-center gap-2 px-2 py-2 rounded-md transition-colors text-sm font-medium ${
                                         active ? 'bg-white/5 text-white' : 'text-muted-foreground hover:text-white'
                                     }`}
@@ -161,6 +192,55 @@ export function WorkspaceSwitcher() {
                     </div>
                 </Menu.Items>
             </Transition>
+
+            {/* Create Workspace Modal */}
+            {showCreateModal && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-card w-full max-w-sm rounded-2xl shadow-xl border border-white/10 p-5">
+                        <h3 className="text-lg font-bold text-white mb-1">Criar novo espaço</h3>
+                        <p className="text-sm text-muted-foreground mb-5">
+                            Crie um ambiente isolado para novos clientes, tarefas e equipe.
+                        </p>
+                        
+                        <form onSubmit={handleCreate}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-2">
+                                        Nome do Espaço
+                                    </label>
+                                    <input
+                                        type="text"
+                                        autoFocus
+                                        value={newWorkspaceName}
+                                        onChange={(e) => setNewWorkspaceName(e.target.value)}
+                                        placeholder="Ex: Agência Insight..."
+                                        className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm text-white placeholder-white/20 focus:outline-none focus:border-brand-500/50 transition-colors"
+                                        disabled={isCreating}
+                                    />
+                                </div>
+                                
+                                <div className="flex justify-end gap-2 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowCreateModal(false)}
+                                        className="px-4 py-2 rounded-xl text-sm font-medium text-white hover:bg-white/5 transition-colors"
+                                        disabled={isCreating}
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={!newWorkspaceName.trim() || isCreating}
+                                        className="px-4 py-2 rounded-xl bg-brand-600 hover:bg-brand-500 text-white text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                                    >
+                                        {isCreating ? 'Criando...' : 'Criar Espaço'}
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </Menu>
     );
 }
