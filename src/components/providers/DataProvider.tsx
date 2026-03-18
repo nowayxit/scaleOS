@@ -31,11 +31,20 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
         if (status === "authenticated" && currentAgencyId && currentAgencyId !== loadedForAgency) {
             async function fetchInitialData() {
                 try {
+                    // 1. Load Kanban columns first — CRITICAL: store has fake IDs, get real ones from DB
+                    const colRes = await fetch("/api/columns");
+                    if (colRes.ok) {
+                        const dbColumns = await colRes.json();
+                        if (dbColumns.length > 0) {
+                            useTaskStore.setState({ columns: dbColumns });
+                        }
+                    }
+
+                    // 2. Load clients and nested data
                     const res = await fetch("/api/clients");
                     if (res.ok) {
                         const dbClients = await res.json();
                         
-                        // Flatten data for Zustand
                         const allRoutines: any[] = [];
                         const allDecisionLogs: any[] = [];
                         const allCases: any[] = [];
@@ -56,7 +65,6 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                                     });
                                 });
                             }
-                            // Return client without heavy nested relations to avoid massive redundant store
                             const { routines, decisionLogs, cases, tasks, meetingNotes, ...rest } = client;
                             return rest;
                         });
@@ -66,13 +74,12 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                         if (setDecisionLogs) setDecisionLogs(allDecisionLogs);
                         if (setCases) setCases(allCases);
                         if (setTasks) setTasks(allTasks);
-                        
-                        // Load meeting notes into the store
                         useAppStore.setState({ meetingNotes: allMeetingNotes });
 
                         setLoadedForAgency(currentAgencyId);
                     }
 
+                    // 3. Load agency info
                     const apiAgencyRes = await fetch("/api/agency");
                     if (apiAgencyRes.ok) {
                         const agencyData = await apiAgencyRes.json();

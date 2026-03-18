@@ -43,6 +43,7 @@ export default function CockpitPage() {
     const [insight, setInsight] = useState("");
     const [mounted, setMounted] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [insightSaved, setInsightSaved] = useState(false);
     const [showSettingsModal, setShowSettingsModal] = useState(false);
     const [newRoutineLabel, setNewRoutineLabel] = useState("");
     const [newRoutinePlatform, setNewRoutinePlatform] = useState<'meta' | 'google' | 'geral'>('meta');
@@ -106,12 +107,13 @@ export default function CockpitPage() {
 
             if (!res.ok) throw new Error("Failed to save session");
 
-            // Also call the local state updater so the UX reacts immediately 
-            // without waiting for a re-fetch of the client table on Home page
+            const saved = await res.json();
+            // Update local state so user sees the new entry immediately
+            setOptimizationSessions(prev => [saved, ...prev]);
             saveOptimizationSession(client.id, insight);
-            
             setInsight("");
-            router.push('/');
+            setInsightSaved(true);
+            setTimeout(() => setInsightSaved(false), 3000);
         } catch (err) {
             console.error(err);
             alert("Erro ao salvar o ciclo. Tente novamente.");
