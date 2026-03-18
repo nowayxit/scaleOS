@@ -93,7 +93,7 @@ export default function MembrosPage() {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="flex-1 overflow-y-auto p-8 ml-64">
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-8">
             <div className="w-10 h-10 rounded-xl bg-brand-600/20 flex items-center justify-center">

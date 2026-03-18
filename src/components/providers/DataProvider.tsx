@@ -2,11 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter, usePathname } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import { useTaskStore } from "@/store/useTaskStore";
 
 export function DataProvider({ children }: { children: React.ReactNode }) {
     const { data: session, status } = useSession();
+    const router = useRouter();
+    const pathname = usePathname();
     const setClients = useAppStore(s => s.setClients);
     const setRoutines = useAppStore(s => (s as any).setRoutines);
     const setDecisionLogs = useAppStore(s => (s as any).setDecisionLogs);
@@ -14,10 +17,18 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
     const updateAgency = useAppStore(s => s.updateAgency);
     const setTasks = useTaskStore(s => (s as any).setTasks);
 
-    const [hasLoaded, setHasLoaded] = useState(false);
+    const currentAgencyId = (session?.user as any)?.currentAgencyId;
+    const [loadedForAgency, setLoadedForAgency] = useState<string | null>(null);
+
+    // If authenticated but no workspace, redirect to onboarding (unless already there)
+    useEffect(() => {
+        if (status === "authenticated" && !currentAgencyId && pathname !== "/onboarding") {
+            router.push("/onboarding");
+        }
+    }, [status, currentAgencyId, pathname, router]);
 
     useEffect(() => {
-        if (status === "authenticated" && !hasLoaded) {
+        if (status === "authenticated" && currentAgencyId && currentAgencyId !== loadedForAgency) {
             async function fetchInitialData() {
                 try {
                     const res = await fetch("/api/clients");
@@ -59,7 +70,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
                         // Load meeting notes into the store
                         useAppStore.setState({ meetingNotes: allMeetingNotes });
 
-                        setHasLoaded(true);
+                        setLoadedForAgency(currentAgencyId);
                     }
 
                     const apiAgencyRes = await fetch("/api/agency");
@@ -80,7 +91,7 @@ export function DataProvider({ children }: { children: React.ReactNode }) {
             }
             fetchInitialData();
         }
-    }, [status, hasLoaded, setClients, setRoutines, setDecisionLogs, setCases, setTasks, updateAgency]);
+    }, [status, currentAgencyId, loadedForAgency, setClients, setRoutines, setDecisionLogs, setCases, setTasks, updateAgency]);
 
     return <>{children}</>;
 }

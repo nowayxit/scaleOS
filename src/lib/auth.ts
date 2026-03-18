@@ -62,8 +62,12 @@ export const authOptions: NextAuthOptions = {
         token.email = user.email;
       }
       
-      if (trigger === "update" && session?.name) {
-        token.name = session.name;
+      // Handle session.update() calls — propagate any updated fields
+      if (trigger === "update" && session) {
+        if (session.name) token.name = session.name;
+        if (session.currentAgencyId) {
+          token.agencyId = session.currentAgencyId;
+        }
       }
 
       return token;

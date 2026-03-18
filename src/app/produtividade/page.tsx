@@ -81,8 +81,8 @@ export default function ProdutividadePage() {
   return (
     <div className="flex h-screen bg-background overflow-hidden">
       <Sidebar />
-      <main className="flex-1 overflow-y-auto p-8">
-        <div className="max-w-6xl mx-auto">
+      <main className="flex-1 overflow-y-auto p-8 ml-64">
+        <div className="max-w-5xl mx-auto">
           {/* Header */}
           <div className="flex items-center justify-between mb-8 flex-wrap gap-4">
             <div className="flex items-center gap-3">

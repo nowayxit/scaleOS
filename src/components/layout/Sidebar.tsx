@@ -1,7 +1,7 @@
 "use client";
 
 import Link from 'next/link';
-import { LayoutDashboard, Users, Workflow, BarChart3, Settings, Bell, Zap, ListTodo, Link2, X, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, Users, BarChart3, Settings, Bell, ListTodo, Link2, X, BarChart2, ChevronLeft, ChevronRight } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 import { useAppStore } from '@/store/useAppStore';
 import { useSession, signOut } from 'next-auth/react';
@@ -15,10 +15,11 @@ export function Sidebar() {
     const clients = useAppStore(s => s.clients);
     const { data: session } = useSession();
     const [showNotifications, setShowNotifications] = useState(false);
+    const [collapsed, setCollapsed] = useState(false);
 
     const today = new Date().toISOString().split('T')[0];
     const overdueClients = useMemo(() => 
-        clients.filter(c => c.nextReviewDate && c.nextReviewDate < today)
+        clients.filter(c => (c as any).nextReviewDate && (c as any).nextReviewDate < today)
     , [clients, today]);
 
     const navItems = [
@@ -30,20 +31,40 @@ export function Sidebar() {
         { label: 'Central de Links', icon: Link2, href: '/vault' },
     ];
 
+    const sidebarWidth = collapsed ? 'w-[60px]' : 'w-64';
+
     return (
-        <aside className="w-64 border-r border-card-border bg-card/60 backdrop-blur-xl flex flex-col h-screen fixed left-0 top-0 shadow-2xl z-50 transition-all">
-            <div className="p-6">
+        <aside className={`${sidebarWidth} border-r border-card-border bg-card/60 backdrop-blur-xl flex flex-col h-screen fixed left-0 top-0 shadow-2xl z-50 transition-all duration-300`}>
+            
+            {/* Toggle Button */}
+            <button
+                onClick={() => setCollapsed(prev => !prev)}
+                className="absolute -right-3 top-6 w-6 h-6 rounded-full bg-card border border-card-border text-muted-foreground hover:text-white hover:bg-brand-600 flex items-center justify-center shadow-md transition-all z-10"
+                title={collapsed ? "Expandir sidebar" : "Colapsar sidebar"}
+            >
+                {collapsed ? <ChevronRight size={12} /> : <ChevronLeft size={12} />}
+            </button>
+
+            <div className={`p-4 ${collapsed ? 'px-3' : 'px-6'} transition-all duration-300`}>
                 <Link href="/">
-                    <h1 className="text-xl font-bold tracking-tighter flex items-center gap-1.5 cursor-pointer group">
-                        <div className="w-6 h-6 rounded bg-brand-500 shadow-[0_0_15px_rgba(89,115,255,0.6)] group-hover:scale-110 transition-transform"></div>
-                        <span>Scale<span className="text-white">OS</span></span>
-                    </h1>
+                    {collapsed ? (
+                        <div className="w-7 h-7 rounded bg-brand-500 shadow-[0_0_15px_rgba(89,115,255,0.6)] mx-auto" />
+                    ) : (
+                        <h1 className="text-xl font-bold tracking-tighter flex items-center gap-1.5 cursor-pointer group">
+                            <div className="w-6 h-6 rounded bg-brand-500 shadow-[0_0_15px_rgba(89,115,255,0.6)] group-hover:scale-110 transition-transform shrink-0"></div>
+                            <span>Scale<span className="text-white">OS</span></span>
+                        </h1>
+                    )}
                 </Link>
-                <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest pl-8 text-brand-400">Operating System</p>
+                {!collapsed && (
+                    <p className="text-[10px] text-muted-foreground mt-1 font-mono uppercase tracking-widest pl-8 text-brand-400">Operating System</p>
+                )}
             </div>
 
-            <nav className="flex-1 px-4 space-y-1 mt-2 overflow-y-auto">
-                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">Main Console</div>
+            <nav className={`flex-1 ${collapsed ? 'px-2' : 'px-4'} space-y-1 mt-2 overflow-y-auto transition-all duration-300`}>
+                {!collapsed && (
+                    <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3 px-3">Main Console</div>
+                )}
 
                 {navItems.map((item) => {
                     const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
@@ -51,31 +72,33 @@ export function Sidebar() {
                         <Link
                             key={item.label}
                             href={item.href}
-                            className={`flex items-center justify-between px-3 py-2.5 rounded-md transition-all ${isActive
+                            title={collapsed ? item.label : undefined}
+                            className={`flex items-center ${collapsed ? 'justify-center px-0 py-3' : 'justify-between px-3 py-2.5'} rounded-md transition-all ${isActive
                                     ? 'bg-brand-500/10 text-brand-100 border border-brand-500/20'
                                     : 'text-muted-foreground hover:bg-white/[0.03] hover:text-white border border-transparent'
                                 }`}
                         >
-                            <div className="flex items-center gap-3">
+                            <div className={`flex items-center ${collapsed ? '' : 'gap-3'}`}>
                                 <item.icon size={18} className={isActive ? "text-brand-500" : ""} />
-                                <span className="text-sm font-medium">{item.label}</span>
+                                {!collapsed && <span className="text-sm font-medium">{item.label}</span>}
                             </div>
-                            {isActive && <div className="w-1.5 h-1.5 rounded-full bg-brand-500 shadow-[0_0_8px_rgba(89,115,255,1)]"></div>}
+                            {!collapsed && isActive && <div className="w-1.5 h-1.5 rounded-full bg-brand-500 shadow-[0_0_8px_rgba(89,115,255,1)]"></div>}
                         </Link>
                     );
                 })}
             </nav>
 
-            <div className="p-4 border-t border-card-border mt-auto bg-black/20">
+            <div className={`${collapsed ? 'px-2' : 'px-4'} py-4 border-t border-card-border mt-auto bg-black/20 transition-all duration-300`}>
 
                 {/* Pomodoro Timer */}
-                <PomodoroTimer />
+                {!collapsed && <PomodoroTimer />}
 
                 <div className="relative">
-                    <div className="flex items-center justify-between px-3 py-2 text-muted-foreground w-full mb-2">
+                    <div className={`flex items-center ${collapsed ? 'flex-col gap-3' : 'justify-between'} px-${collapsed ? '0' : '3'} py-2 text-muted-foreground w-full mb-2`}>
                         <button 
                             onClick={() => setShowNotifications(prev => !prev)}
                             className="relative"
+                            title="Notificações"
                         >
                             <Bell size={16} className="hover:text-white cursor-pointer transition-colors" />
                             {overdueClients.length > 0 && (
@@ -84,8 +107,18 @@ export function Sidebar() {
                                 </span>
                             )}
                         </button>
-                        <Link href="/configuracoes/membros"><Users size={16} className="hover:text-white cursor-pointer transition-colors" /></Link>
-                        <Link href="/configuracoes"><Settings size={16} className="hover:text-white cursor-pointer transition-colors" /></Link>
+                        {!collapsed && (
+                            <>
+                                <Link href="/configuracoes/membros" title="Membros"><Users size={16} className="hover:text-white cursor-pointer transition-colors" /></Link>
+                                <Link href="/configuracoes" title="Configurações"><Settings size={16} className="hover:text-white cursor-pointer transition-colors" /></Link>
+                            </>
+                        )}
+                        {collapsed && (
+                            <>
+                                <Link href="/configuracoes/membros" title="Membros"><Users size={16} className="hover:text-white cursor-pointer transition-colors" /></Link>
+                                <Link href="/configuracoes" title="Configurações"><Settings size={16} className="hover:text-white cursor-pointer transition-colors" /></Link>
+                            </>
+                        )}
                     </div>
 
                     {showNotifications && (
@@ -98,7 +131,7 @@ export function Sidebar() {
                                 {overdueClients.length === 0 ? (
                                     <p className="text-xs text-muted-foreground text-center px-3 py-4">Nenhuma revisão pendente. ✅</p>
                                 ) : (
-                                    overdueClients.map(c => (
+                                    overdueClients.map((c: any) => (
                                         <Link key={c.id} href={`/cockpit/${c.id}`} onClick={() => setShowNotifications(false)}
                                             className="flex items-center gap-2 px-3 py-2.5 hover:bg-white/5 transition-colors border-b border-card-border/50 last:border-0">
                                             <span className="w-1.5 h-1.5 rounded-full bg-status-red shrink-0" />
@@ -115,16 +148,17 @@ export function Sidebar() {
                 </div>
 
                 {/* Workspace / Agency Select Dropdown */}
-                <WorkspaceSwitcher />
+                {!collapsed && <WorkspaceSwitcher />}
 
                 <button 
                     onClick={async () => {
                         useAppStore.persist.clearStorage();
                         await signOut({ callbackUrl: '/login' });
                     }}
-                    className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium text-status-red/80 hover:text-status-red hover:bg-status-red/10 border border-transparent hover:border-status-red/20 transition-all"
+                    className={`w-full flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium text-status-red/80 hover:text-status-red hover:bg-status-red/10 border border-transparent hover:border-status-red/20 transition-all mt-1`}
+                    title="Sair da conta"
                 >
-                    Sair da conta
+                    {collapsed ? '→' : 'Sair da conta'}
                 </button>
             </div>
         </aside>
